@@ -76,10 +76,9 @@ final class PortalController
 
         try {
             Database::run(
-                'UPDATE members SET first_name = ?, last_name = ?, contact_number = ?, chapter_region = ?, prc_license_number = ?, paa_id_number = ?
+                'UPDATE members SET first_name = ?, last_name = ?, contact_number = ?, designation = ?, nickname = ?, birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?, prc_license_number = ?
                  WHERE member_id = ?',
-                [$data['first_name'], $data['last_name'], $data['contact_number'], $data['chapter_region'],
-                 $data['prc_license_number'], $data['paa_id_number'], $member['member_id']],
+                [$data['first_name'], $data['last_name'], $data['contact_number'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'], $data['prc_license_number'], $member['member_id']],
             );
         } catch (PDOException $e) {
             if ($e->getCode() !== '23000') {
@@ -99,10 +98,11 @@ final class PortalController
     {
         $member = MemberAuth::require();
         $rows = Database::all(
-            "SELECT r.registration_id, r.registration_date, r.payment_status, r.amount_paid, r.qr_token,
+            "SELECT r.registration_id, r.registration_date, r.qr_token,
                     e.event_id, e.title, e.event_type, e.venue, e.start_date, e.end_date, e.status AS event_status,
-                    e.registration_fee, e.cpd_units, e.cpd_min_attendance_pct,
+                    e.cpd_units, e.cpd_min_attendance_pct,
                     (SELECT COUNT(*) FROM event_sessions s WHERE s.event_id = e.event_id) AS sessions_total,
+                    (SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time)), 0) / 60 FROM event_sessions s WHERE s.event_id = e.event_id) AS scheduled_hours,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = e.event_id) AS sessions_attended,
                     c.certificate_no, c.verification_code, c.issued_at, c.cpd_units AS certificate_cpd_units, c.revoked_at
@@ -121,8 +121,6 @@ final class PortalController
             return [
                 'registration_id' => (int) $r['registration_id'],
                 'registration_date' => $r['registration_date'],
-                'payment_status' => $r['payment_status'],
-                'amount_paid' => $r['amount_paid'],
                 'qr_token' => $r['qr_token'],
                 'sessions_attended' => (int) $r['sessions_attended'],
                 'sessions_total' => (int) $r['sessions_total'],
@@ -134,9 +132,9 @@ final class PortalController
                     'start_date' => $r['start_date'],
                     'end_date' => $r['end_date'],
                     'status' => $r['event_status'],
-                    'registration_fee' => $r['registration_fee'],
                     'cpd_units' => $r['cpd_units'],
                     'cpd_min_attendance_pct' => (int) $r['cpd_min_attendance_pct'],
+                    'scheduled_hours' => (float) $r['scheduled_hours'],
                 ],
                 'certificate' => $hasCertificate ? [
                     'certificate_no' => $r['certificate_no'],
@@ -160,7 +158,7 @@ final class PortalController
             return 'Your CPD certificate for this event was revoked. Contact PAA for details.';
         }
         $reason = CertificateService::ineligibleReason(
-            $r['payment_status'], (int) $r['sessions_attended'], (int) $r['sessions_total'], (int) $r['cpd_min_attendance_pct'],
+            (int) $r['sessions_attended'], (int) $r['sessions_total'], (int) $r['cpd_min_attendance_pct'],
         );
 
         return $reason === null

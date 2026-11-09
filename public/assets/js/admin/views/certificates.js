@@ -1,6 +1,6 @@
 import { api } from '../../lib/api.js';
 import {
-    confirmDialog, emptyState, esc, formatDateTime, openModal, paymentBadge, toast, toastError, withBusy,
+    confirmDialog, emptyState, esc, formatDateTime, openModal, toast, toastError, withBusy,
 } from '../../lib/ui.js';
 
 export async function renderCertificates(el, event, reload) {
@@ -28,11 +28,10 @@ export async function renderCertificates(el, event, reload) {
                     <div class="card-body">
                         <dl class="row mb-0 small">
                             ${row('CPD units', esc(Number(settings.cpd_units)))}
-                            ${row('Requirement', `Paid or waived, and at least ${settings.cpd_min_attendance_pct}% of ${event.sessions.length} session(s) attended`)}
+                            ${row('Requirement', `At least ${settings.cpd_min_attendance_pct}% of ${event.sessions.length} session(s) attended`)}
                             ${row('PRC accreditation no.', esc(settings.prc_accreditation_no))}
-                            ${row('Signatory', settings.signatory_name
-                                ? `${esc(settings.signatory_name)}<div class="text-muted">${esc(settings.signatory_title)}</div>`
-                                : '<span class="text-danger">Not set</span>')}
+                            ${row('Signatory 1', settings.signatory_name ? `${esc(settings.signatory_name)}<div class="text-muted">${esc(settings.signatory_title)}</div>` : '<span class="text-danger">Not set</span>')}
+                            ${row('Signatory 2', settings.signatory_2_name ? `${esc(settings.signatory_2_name)}<div class="text-muted">${esc(settings.signatory_2_title)}</div>` : '<span class="text-danger">Not set</span>')}
                         </dl>
                     </div>
                 </div>
@@ -41,12 +40,14 @@ export async function renderCertificates(el, event, reload) {
                 <div class="card h-100">
                     <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Signature &amp; layout</h2></div>
                     <div class="card-body d-flex flex-column gap-3">
-                        <div class="small">${settings.has_signature
-                            ? '<i class="bi bi-check-circle-fill text-success me-1"></i>Signature image uploaded.'
-                            : '<i class="bi bi-dash-circle text-muted me-1"></i>No signature image. A blank line is printed for wet signing.'}</div>
+                        <div class="small">${settings.has_signature && settings.has_signature_2
+                            ? '<i class="bi bi-check-circle-fill text-success me-1"></i>Both signature images uploaded.'
+                            : '<i class="bi bi-dash-circle text-muted me-1"></i>One or both signature images are missing; blank signing lines will appear.'}</div>
                         ${editable ? `
                         <form id="signature-form">
-                            <label class="form-label small mb-1" for="signature">${settings.has_signature ? 'Replace signature' : 'Upload signature'}</label>
+                            <label class="form-label small mb-1" for="signatory">Signatory</label>
+                            <select class="form-select form-select-sm mb-2" id="signatory" name="signatory"><option value="1">${esc(settings.signatory_name || 'Signatory 1')}</option><option value="2">${esc(settings.signatory_2_name || 'Signatory 2')}</option></select>
+                            <label class="form-label small mb-1" for="signature">Upload or replace signature image</label>
                             <input class="form-control form-control-sm mb-2" type="file" id="signature" name="signature" accept="image/png,image/jpeg" required>
                             <div class="d-flex align-items-center gap-2">
                                 <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit"><i class="bi bi-upload me-1"></i>Upload</button>
@@ -85,7 +86,9 @@ export async function renderCertificates(el, event, reload) {
 
     const draw = () => {
         const rows = data.certificates.filter(matches);
-        document.getElementById('cert-count').textContent = `${rows.length} of ${data.certificates.length}`;
+        const count = el.querySelector('#cert-count');
+        if (!count || !el.isConnected) return;
+        count.textContent = `${rows.length} of ${data.certificates.length}`;
         const table = document.getElementById('cert-table');
         if (!rows.length) {
             table.innerHTML = emptyState('award', data.certificates.length ? 'Nobody matches this filter' : 'No registrations yet');
@@ -94,12 +97,11 @@ export async function renderCertificates(el, event, reload) {
         table.innerHTML = `
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
-                    <thead><tr><th>Attendee</th><th>Payment</th><th class="text-center">Attendance</th><th>Certificate</th><th class="sticky-end"></th></tr></thead>
+                    <thead><tr><th>Attendee</th><th class="text-center">Attendance</th><th>Certificate</th><th class="sticky-end"></th></tr></thead>
                     <tbody>${rows.map((r) => `
                         <tr>
                             <td><div class="fw-semibold">${esc(r.last_name)}, ${esc(r.first_name)}</div>
                                 <div class="small text-muted">${esc(r.email)}${r.prc_license_number ? ` &middot; PRC ${esc(r.prc_license_number)}` : ''}</div></td>
-                            <td>${paymentBadge(r.payment_status)}</td>
                             <td class="text-center text-nowrap">${r.sessions_attended} / ${r.sessions_total}
                                 <div class="small text-muted">${r.attendance_pct}%</div></td>
                             <td class="small">${certificateStatus(r)}</td>
@@ -110,7 +112,7 @@ export async function renderCertificates(el, event, reload) {
             </div>`;
     };
 
-    document.getElementById('cert-filter').addEventListener('change', (e) => { filter = e.target.value; draw(); });
+    el.querySelector('#cert-filter')?.addEventListener('change', (e) => { filter = e.target.value; draw(); });
     draw();
 
     document.getElementById('signature-form')?.addEventListener('submit', async (e) => {

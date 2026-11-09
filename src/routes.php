@@ -53,8 +53,6 @@ return static function (Router $r): void {
     $r->post('/api/events/{id}/registrations', [RegistrationController::class, 'store']);
     $r->post('/api/events/{id}/registrations/resend', [RegistrationController::class, 'resend']);
     $r->get('/api/events/{id}/registrations', [RegistrationController::class, 'index']);
-    $r->put('/api/registrations/{id}/payment', [RegistrationController::class, 'updatePayment']);
-    $r->post('/api/members/lookup', [MemberController::class, 'lookup']);
     $r->get('/api/members', [MemberController::class, 'index']);
     $r->get('/api/members/export.csv', [ReportController::class, 'membersCsv']);
     $r->get('/api/members/export.xlsx', [ReportController::class, 'membersXlsx']);

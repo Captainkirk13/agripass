@@ -28,7 +28,6 @@ final class ReportPdf
     private static function html(array $event, array $report): string
     {
         $e = static fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
-        $peso = static fn ($v) => 'PHP ' . number_format((float) $v, 2);
         $logo = 'data:image/png;base64,' . base64_encode((string) file_get_contents(dirname(__DIR__, 2) . '/public/assets/img/paa-logo.png'));
         $k = $report['kpis'];
         $generated = (new \DateTimeImmutable($report['generated_at']))->format('F j, Y g:i A');
@@ -78,14 +77,10 @@ final class ReportPdf
         $dates = $e(Mailer::eventDates($event));
         $status = $e($event['status']);
         $accreditation = $event['prc_accreditation_no'] ? ' · PRC accreditation ' . $e($event['prc_accreditation_no']) : '';
-        $kpiRow1 = $kpi('Registered', (string) $k['registered'], $k['cleared'] . ' paid or waived')
+        $kpiRow1 = $kpi('Registered', (string) $k['registered'], $k['registered'] . ' registrations')
             . $kpi('Attended', (string) $k['attended'], $k['turnout_pct'] . '% turnout')
-            . $kpi('CPD eligible', (string) $k['cpd_eligible'], $k['certificates_issued'] . ' certificates issued')
+            . $kpi('Certificate eligible', (string) $k['certificate_eligible'], $k['certificates_issued'] . ' certificates issued')
             . $kpi('Check-ins', (string) $k['total_scans'], $k['offline_scans'] . ' synced from offline');
-        $kpiRow2 = $kpi('Revenue collected', $peso($k['revenue']), $k['payments']['Paid'] . ' paid registrations')
-            . $kpi('Pending payment', (string) $k['payments']['Pending'], $peso($k['outstanding']) . ' outstanding')
-            . $kpi('Waived', (string) $k['payments']['Waived'], 'No fee due')
-            . $kpi('Refunded', (string) $k['payments']['Refunded'], 'Passes invalid');
 
         return <<<HTML
             <!doctype html>
@@ -130,11 +125,11 @@ final class ReportPdf
 
                 <table class="kpis" style="border-collapse: separate; border-spacing: 4px; margin: 0 -4px;">
                     <tr>{$kpiRow1}</tr>
-                    <tr>{$kpiRow2}</tr>
+
                 </table>
 
                 <h2>Session attendance</h2>
-                <table><thead><tr><th>Session</th><th class="num">Checked in</th><th class="num">Offline</th><th colspan="2">Turnout of paid / waived</th></tr></thead>
+                <table><thead><tr><th>Session</th><th class="num">Checked in</th><th class="num">Offline</th><th colspan="2">Turnout of registrants</th></tr></thead>
                     <tbody>{$sessionRows}</tbody></table>
 
                 <h2>Arrivals by hour</h2>

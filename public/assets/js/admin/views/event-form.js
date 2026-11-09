@@ -66,17 +66,6 @@ export async function renderEventForm(eventId = null) {
 
                 <div class="col-lg-4">
                     <div class="card mb-4">
-                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Registration fee</h2></div>
-                        <div class="card-body">
-                            <label class="form-label" for="registration_fee">Fee</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input class="form-control" type="number" min="0" step="0.01" id="registration_fee" name="registration_fee" value="${v('registration_fee', '0.00')}">
-                            </div>
-                            <div class="form-text">Set to 0 for free events. Free registrations are marked as Waived automatically.</div>
-                        </div>
-                    </div>
-                    <div class="card mb-4">
                         <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">CPD &amp; PRC compliance</h2></div>
                         <div class="card-body row g-3">
                             <div class="col-12">
@@ -97,7 +86,7 @@ export async function renderEventForm(eventId = null) {
                         </div>
                     </div>
                     <div class="card mb-4">
-                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate signatory</h2></div>
+                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate signatory 1</h2></div>
                         <div class="card-body row g-3">
                             <div class="col-12">
                                 <label class="form-label" for="cert_signatory_name">Name</label>
@@ -109,7 +98,11 @@ export async function renderEventForm(eventId = null) {
                                 <input class="form-control" id="cert_signatory_title" name="cert_signatory_title" value="${v('cert_signatory_title')}" maxlength="150"
                                        placeholder="e.g. National President, PAA">
                             </div>
-                            <div class="col-12 form-text mt-2">Printed on CPD certificates. Upload the signature image from the event's Certificates tab.</div>
+                            <div class="col-12"><label class="form-label" for="cert_signatory_2_name">Second signatory name</label>
+                                <input class="form-control" id="cert_signatory_2_name" name="cert_signatory_2_name" value="${v('cert_signatory_2_name')}" maxlength="100"></div>
+                            <div class="col-12"><label class="form-label" for="cert_signatory_2_title">Second signatory position</label>
+                                <input class="form-control" id="cert_signatory_2_title" name="cert_signatory_2_title" value="${v('cert_signatory_2_title')}" maxlength="150"></div>
+                            <div class="col-12 form-text mt-2">Printed on CPD certificates. Upload the two signature images from the event's Certificates tab.</div>
                         </div>
                     </div>
                 </div>

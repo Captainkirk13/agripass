@@ -1,11 +1,11 @@
 import { api } from '../../lib/api.js';
 import { activateEvent } from '../app.js';
 import { isAdmin, loadEvents } from '../state.js';
-import { renderCertificates } from './certificates.js';
+import { renderCertificates } from './certificates.js?v=20261107-duration2';
 import { renderReports } from './reports.js';
 import {
-    confirmDialog, emptyState, esc, formData, formatDate, formatDateRange, formatDateTime,
-    formatPeso, formatTime, openModal, paymentBadge, statusBadge, toast, toastError,
+    confirmDialog, emptyState, esc, formData, formatDate, formatDateRange, formatDateTime, formatDuration,
+    formatTime, openModal, statusBadge, toast, toastError,
 } from '../../lib/ui.js';
 
 const TABS = [
@@ -26,7 +26,6 @@ const NEXT_STATUS = {
 };
 
 const FIELD_TYPES = { text: 'Text', number: 'Number', select: 'Dropdown', checkbox: 'Checkbox' };
-const PAYMENT_STATUSES = ['Pending', 'Paid', 'Waived', 'Refunded'];
 
 export async function renderEventDetail(eventId, tab = 'overview') {
     const tabs = TABS.filter(([, , , access]) => access !== 'admin' || isAdmin());
@@ -97,6 +96,16 @@ export async function renderEventDetail(eventId, tab = 'overview') {
     view.querySelector('.nav-tabs .active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
+function totalSessionHours(sessions = []) {
+    return sessions.reduce((total, session) => {
+        const [startHour, startMinute] = String(session.start_time).split(':').map(Number);
+        const [endHour, endMinute] = String(session.end_time).split(':').map(Number);
+        let minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+        if (minutes < 0) minutes += 24 * 60;
+        return total + minutes / 60;
+    }, 0);
+}
+
 function tabCount(event, key) {
     const count = { sessions: event.sessions.length, fields: event.custom_fields.length, registrations: event.stats.registrations }[key];
     return count === undefined ? '' : ` <span class="badge rounded-pill text-bg-light border ms-1">${count}</span>`;
@@ -116,11 +125,10 @@ function renderOverview(el, event) {
                             ${row('Event type', esc(event.event_type))}
                             ${row('Venue', esc(event.venue))}
                             ${row('Dates', formatDateRange(event.start_date, event.end_date))}
-                            ${row('Registration fee', Number(event.registration_fee) > 0 ? formatPeso(event.registration_fee) : 'Free')}
-                            ${row('CPD units', esc(Number(event.cpd_units)))}
-                            ${row('Certificate requirement', `${esc(event.cpd_min_attendance_pct)}% of sessions attended`)}
+                            ${row('Scheduled attendance', formatDuration(totalSessionHours(event.sessions)))}
+                            ${row('Certificate attendance requirement', `${esc(event.certificate_min_attendance_pct)}% of sessions attended`)}
                             ${row('PRC accreditation no.', esc(event.prc_accreditation_no))}
-                            ${row('Certificate signatory', event.cert_signatory_name ? `${esc(event.cert_signatory_name)}<div class="small text-muted">${esc(event.cert_signatory_title)}</div>` : '')}
+                            ${row('Certificate signatories', [event.cert_signatory_name, event.cert_signatory_2_name].filter(Boolean).map((n, i) => `${esc(n)}<div class="small text-muted">${esc(i ? event.cert_signatory_2_title : event.cert_signatory_title)}</div>`).join(''))}
                             ${row('Created', formatDateTime(event.created_at))}
                         </dl>
                         ${event.description ? `<hr><p class="mb-0" style="white-space:pre-line">${esc(event.description)}</p>` : ''}
@@ -133,8 +141,7 @@ function renderOverview(el, event) {
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between"><span>Total registrations</span><strong>${stats.registrations}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Checked in (any session)</span><strong>${stats.checked_in}</strong></li>
-                        ${PAYMENT_STATUSES.map((s) => `<li class="list-group-item d-flex justify-content-between"><span>${paymentBadge(s)}</span><strong>${stats.payments[s]}</strong></li>`).join('')}
-                        <li class="list-group-item d-flex justify-content-between"><span>Revenue collected</span><strong>${formatPeso(stats.revenue)}</strong></li>
+
                     </ul>
                 </div>
             </div>
@@ -305,17 +312,14 @@ function renderFields(el, event, editable, reload) {
 
 async function renderRegistrations(el, event) {
     let { registrations } = await api(`/events/${event.event_id}/registrations`);
-    const canVerify = isAdmin() && event.status !== 'Archived';
+
     const totalSessions = event.sessions.length;
     let search = '';
-    let payment = 'All';
+
 
     el.innerHTML = `
         <div class="card">
             <div class="card-header bg-white py-3 d-flex flex-wrap gap-2 align-items-center">
-                <select class="form-select form-select-sm" style="max-width:180px" id="payment-filter">
-                    <option>All</option>${PAYMENT_STATUSES.map((s) => `<option>${s}</option>`).join('')}
-                </select>
                 <input type="search" class="form-control form-control-sm" style="max-width:280px" placeholder="Search name, email, PRC no., chapter…" id="reg-search">
                 <span class="ms-auto small text-muted" id="reg-count"></span>
             </div>
@@ -323,10 +327,11 @@ async function renderRegistrations(el, event) {
         </div>`;
 
     const draw = () => {
-        const rows = registrations.filter((r) => (payment === 'All' || r.payment_status === payment)
-            && [r.first_name, r.last_name, r.email, r.prc_license_number, r.chapter_region, r.paa_id_number]
+        const rows = registrations.filter((r) => [r.first_name, r.last_name, r.email, r.prc_license_number, r.chapter_region, r.designation, r.nickname, r.contact_number, r.flight_arrival, r.flight_departure, r.food_allergies]
                 .join(' ').toLowerCase().includes(search));
-        document.getElementById('reg-count').textContent = `${rows.length} of ${registrations.length}`;
+        const count = el.querySelector('#reg-count');
+        if (!count || !el.isConnected) return;
+        count.textContent = `${rows.length} of ${registrations.length}`;
         const table = document.getElementById('reg-table');
 
         if (!rows.length) {
@@ -341,7 +346,7 @@ async function renderRegistrations(el, event) {
                     <thead><tr>
                         <th>Attendee</th><th>Chapter</th><th>PRC license</th>
                         ${event.custom_fields.map((f) => `<th>${esc(f.field_label)}</th>`).join('')}
-                        <th>Payment</th><th class="text-center">Sessions</th><th>Registered</th>${canVerify ? '<th class="sticky-end"></th>' : ''}
+                        <th class="text-center">Sessions</th><th>Registered</th>
                     </tr></thead>
                     <tbody>
                         ${rows.map((r) => {
@@ -357,62 +362,18 @@ async function renderRegistrations(el, event) {
                                     const shown = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
                                     return `<td class="small">${shown === undefined || shown === '' ? '<span class="text-muted">—</span>' : esc(shown)}</td>`;
                                 }).join('')}
-                                <td>${paymentBadge(r.payment_status)}
-                                    ${r.payment_reference ? `<div class="small text-muted">${esc(r.payment_reference)}</div>` : ''}
-                                    ${Number(r.amount_paid) > 0 ? `<div class="small text-muted">${formatPeso(r.amount_paid)}</div>` : ''}</td>
                                 <td class="text-center">${r.sessions_attended} / ${totalSessions}</td>
                                 <td class="small text-nowrap">${formatDateTime(r.registration_date)}</td>
-                                ${canVerify ? `<td class="text-end sticky-end"><button class="btn btn-sm btn-outline-primary text-nowrap" data-pay="${r.registration_id}"><i class="bi bi-cash-coin me-1"></i>Payment</button></td>` : ''}
+
                             </tr>`;
                         }).join('')}
                     </tbody>
                 </table>
             </div>`;
 
-        table.querySelectorAll('[data-pay]').forEach((btn) => btn.addEventListener('click', () => {
-            paymentModal(event, registrations.find((r) => String(r.registration_id) === btn.dataset.pay), async () => {
-                ({ registrations } = await api(`/events/${event.event_id}/registrations`));
-                draw();
-            });
-        }));
+
     };
 
-    document.getElementById('payment-filter').addEventListener('change', (e) => { payment = e.target.value; draw(); });
-    document.getElementById('reg-search').addEventListener('input', (e) => { search = e.target.value.trim().toLowerCase(); draw(); });
+    el.querySelector('#reg-search')?.addEventListener('input', (e) => { search = e.target.value.trim().toLowerCase(); draw(); });
     draw();
-}
-
-function paymentModal(event, registration, onSaved) {
-    const fee = Number(event.registration_fee);
-    openModal({
-        title: 'Verify payment',
-        submitLabel: 'Save payment',
-        body: `
-            <div class="p-3 rounded mb-3" style="background: var(--paa-light)">
-                <div class="fw-semibold">${esc(registration.first_name)} ${esc(registration.last_name)}</div>
-                <div class="small text-muted">${esc(registration.email)} &middot; Fee due: ${formatPeso(fee)}</div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label" for="payment_status">Payment status</label>
-                <select class="form-select" id="payment_status" name="payment_status">
-                    ${PAYMENT_STATUSES.map((s) => `<option ${s === registration.payment_status ? 'selected' : ''}>${s}</option>`).join('')}
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label" for="payment_reference">Reference no.</label>
-                <input class="form-control" id="payment_reference" name="payment_reference" maxlength="100"
-                       value="${esc(registration.payment_reference)}" placeholder="GCash / Maya ref. or bank deposit slip no.">
-            </div>
-            <div>
-                <label class="form-label" for="amount_paid">Amount paid</label>
-                <div class="input-group"><span class="input-group-text">₱</span>
-                    <input class="form-control" type="number" min="0" step="0.01" id="amount_paid" name="amount_paid"
-                           value="${Number(registration.amount_paid) > 0 ? esc(registration.amount_paid) : fee.toFixed(2)}"></div>
-            </div>`,
-        onSubmit: async (form) => {
-            await api(`/registrations/${registration.registration_id}/payment`, { method: 'PUT', body: formData(form) });
-            toast('Payment updated.');
-            await onSaved();
-        },
-    });
 }

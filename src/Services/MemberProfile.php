@@ -14,7 +14,8 @@ final class MemberProfile
 
     private const LIMITS = [
         'first_name' => 50, 'last_name' => 50, 'email' => 100, 'contact_number' => 20,
-        'chapter_region' => 100, 'prc_license_number' => 50, 'paa_id_number' => 50,
+        'chapter_region' => 100, 'prc_license_number' => 50, 'designation' => 100, 'nickname' => 50,
+        'flight_arrival' => 100, 'flight_departure' => 100, 'food_allergies' => 1000,
     ];
 
     /** @param bool $staff Staff may also change the email address and membership status. */
@@ -26,7 +27,12 @@ final class MemberProfile
             'contact_number' => 'optional',
             'chapter_region' => 'optional',
             'prc_license_number' => 'optional',
-            'paa_id_number' => 'optional',
+            'designation' => 'optional',
+            'nickname' => 'optional',
+            'birthdate' => 'optional',
+            'flight_arrival' => 'optional',
+            'flight_departure' => 'optional',
+            'food_allergies' => 'optional',
         ];
         if ($staff) {
             $rules += ['email' => 'required', 'membership_status' => 'required'];
@@ -37,6 +43,12 @@ final class MemberProfile
         foreach (self::LIMITS as $field => $max) {
             if (isset($data[$field]) && mb_strlen((string) $data[$field]) > $max) {
                 $errors[$field] = "Use {$max} characters or fewer.";
+            }
+        }
+        if ($data['birthdate'] !== null && $data['birthdate'] !== '') {
+            $date = \DateTime::createFromFormat('!Y-m-d', (string) $data['birthdate']);
+            if ($date === false || $date->format('Y-m-d') !== $data['birthdate']) {
+                $errors['birthdate'] = 'Enter a valid date in YYYY-MM-DD format.';
             }
         }
         if ($data['contact_number'] !== null && !preg_match('/^[0-9+()\-\s]{7,20}$/', (string) $data['contact_number'])) {
@@ -61,11 +73,7 @@ final class MemberProfile
     /** Maps a unique-key violation on members to a field error. */
     public static function duplicateError(\PDOException $e): HttpException
     {
-        $field = str_contains($e->getMessage(), 'email') ? 'email' : 'paa_id_number';
-
-        return new HttpException(422, 'Validation failed.', [$field => $field === 'email'
-            ? 'Another member already uses this email address.'
-            : 'This PAA ID is linked to another member.']);
+        return new HttpException(422, 'Validation failed.', ['email' => 'Another member already uses this email address.']);
     }
 
     /** Names of fields whose value differs from the stored record. */

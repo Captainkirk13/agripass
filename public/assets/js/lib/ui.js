@@ -27,6 +27,24 @@ export const formatTime = (value) => {
     return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 };
 
+export function scheduledHours(sessions = []) {
+    return sessions.reduce((total, session) => {
+        const [startHour, startMinute] = String(session.start_time).split(':').map(Number);
+        const [endHour, endMinute] = String(session.end_time).split(':').map(Number);
+        let minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+        if (minutes < 0) minutes += 24 * 60;
+        return total + minutes / 60;
+    }, 0);
+}
+
+export const formatDuration = (hours) => {
+    const minutesTotal = Math.round(Number(hours || 0) * 60);
+    const hoursPart = Math.floor(minutesTotal / 60);
+    const minutesPart = minutesTotal % 60;
+    return [hoursPart ? `${hoursPart} ${hoursPart === 1 ? 'hour' : 'hours'}` : '', minutesPart ? `${minutesPart} min` : '']
+        .filter(Boolean).join(' ') || '0 hours';
+};
+
 export const statusBadge = (status) => `<span class="badge badge-status status-${esc(status)}">${esc(status)}</span>`;
 export const paymentBadge = (status) => `<span class="badge badge-status pay-${esc(status)}">${esc(status)}</span>`;
 

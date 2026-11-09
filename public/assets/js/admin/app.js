@@ -3,10 +3,10 @@ import { confirmDialog, esc, openModal, toast, toastError } from '../lib/ui.js';
 import { passwordFields, renderForcedPasswordChange, submitPasswordChange } from '../lib/password.js';
 import { activeEvent, isAdmin, isSuperAdmin, loadEvents, ROLE_LABELS, state } from './state.js';
 import { renderLogin } from './views/login.js';
-import { renderDashboard } from './views/dashboard.js';
+import { renderDashboard } from './views/dashboard.js?v=20261107-duration2';
 import { renderEventList } from './views/event-list.js';
 import { renderEventForm } from './views/event-form.js';
-import { renderEventDetail } from './views/event-detail.js';
+import { renderEventDetail } from './views/event-detail.js?v=20261107-duration2';
 import { renderUsers } from './views/users.js';
 import { renderMemberDetail, renderMembers } from './views/members.js';
 import { renderHelp } from './views/help.js';
@@ -102,7 +102,7 @@ function renderEventSwitcher() {
 
     el.innerHTML = `
         <button class="active-event-pill btn text-truncate ${isAdmin() ? 'dropdown-toggle' : ''}" ${isAdmin() ? 'data-bs-toggle="dropdown"' : ''}
-                title="Active event used by registration, payments and scanners">
+                title="Active event used by registration and scanners">
             ${active
                 ? `<span class="dot"></span><span class="fw-semibold">Active:</span> ${esc(active.title)}`
                 : '<i class="bi bi-exclamation-circle me-1"></i>No active event'}
@@ -123,7 +123,7 @@ export async function activateEvent(eventId) {
     const event = state.events.find((e) => Number(e.event_id) === eventId);
     const ok = await confirmDialog({
         title: 'Switch active event',
-        message: `Make <strong>${esc(event?.title)}</strong> the active event? Registration, payments and all scanners will switch to it.`,
+        message: `Make <strong>${esc(event?.title)}</strong> the active event? Registration and all scanners will switch to it.`,
         confirmLabel: 'Set as active',
     });
     if (!ok) return false;

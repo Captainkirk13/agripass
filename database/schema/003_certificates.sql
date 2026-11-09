@@ -1,11 +1,6 @@
 -- CPD certificates. Applied automatically on a fresh database;
 -- for an existing one run: docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/schema/003_certificates.sql
 
-ALTER TABLE events
-    ADD COLUMN cert_signatory_name VARCHAR(100) NULL AFTER prc_accreditation_no,
-    ADD COLUMN cert_signatory_title VARCHAR(150) NULL AFTER cert_signatory_name,
-    ADD COLUMN cert_signature_path VARCHAR(255) NULL AFTER cert_signatory_title;
-
 -- Name, units and attendance are snapshotted at issuance so later profile or event edits
 -- never change a certificate that has already been handed out.
 CREATE TABLE certificates (

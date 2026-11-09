@@ -45,6 +45,8 @@ final class CertificatePdf
         $qr = $dataUri(QrImage::png($verifyUrl, 6));
         $signatureFile = self::signatureFile($event['cert_signature_path'] ?? null);
         $signature = $signatureFile ? '<img class="sig-img" src="' . $dataUri((string) file_get_contents($signatureFile)) . '">' : '<div class="sig-space"></div>';
+        $signatureFile2 = self::signatureFile($event['cert_signature_2_path'] ?? null);
+        $signature2 = $signatureFile2 ? '<img class="sig-img" src="' . $dataUri((string) file_get_contents($signatureFile2)) . '">' : '<div class="sig-space"></div>';
 
         $units = (float) $c['cpd_units'];
         $unitsText = $units > 0
@@ -80,12 +82,12 @@ final class CertificatePdf
                 .footer table { width: 100%; border-collapse: collapse; }
                 .footer td { vertical-align: bottom; }
                 .meta { width: 34%; font-size: 8pt; line-height: 1.5; color: #4a5a50; }
-                .sig { width: 36%; text-align: center; }
+                .sig { width: 24%; text-align: center; }
                 .sig-img { max-height: 15mm; max-width: 60mm; }
                 .sig-space { height: 15mm; }
                 .sig-name { border-top: .3mm solid #1f2a24; margin: 0 6mm; padding-top: 1.2mm; font-size: 10pt; font-weight: bold; }
                 .sig-title { font-size: 8.5pt; color: #4a5a50; }
-                .qr { width: 30%; text-align: right; font-size: 7pt; color: #4a5a50; }
+                .qr { width: 20%; text-align: right; font-size: 7pt; color: #4a5a50; }
                 .qr img { width: 24mm; height: 24mm; }
                 .watermark { position: absolute; top: 80mm; left: 0; right: 0; text-align: center; font-size: 90pt; font-weight: bold;
                              color: #d63a3a; opacity: .15; transform: rotate(-18deg); }
@@ -116,6 +118,11 @@ final class CertificatePdf
                         {$signature}
                         <div class="sig-name">{$e($event['cert_signatory_name'] ?: 'Authorized Signatory')}</div>
                         <div class="sig-title">{$e($event['cert_signatory_title'] ?: 'Philippine Association of Agriculturists, Inc.')}</div>
+                    </td>
+                    <td class="sig">
+                        {$signature2}
+                        <div class="sig-name">{$e($event['cert_signatory_2_name'] ?: 'Authorized Signatory')}</div>
+                        <div class="sig-title">{$e($event['cert_signatory_2_title'] ?: 'Philippine Association of Agriculturists, Inc.')}</div>
                     </td>
                     <td class="qr">
                         <img src="{$qr}"><br>

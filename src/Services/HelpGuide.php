@@ -21,14 +21,14 @@ final class HelpGuide
         'getting-started' => ['Getting started', 'signpost', 'Signing in, roles and the active event.', self::STAFF],
         'scanning' => ['Checking in attendees', 'qr-code-scan', 'Using the QR scanner and what each result means.', self::STAFF],
         'offline-kiosk' => ['Offline scanning and kiosk mode', 'wifi-off', 'Scanning without internet and self-service check-in.', self::STAFF],
-        'helping-attendees' => ['Helping attendees', 'person-raised-hand', 'Lost passes, pending payments, walk-ins and My AgriPass.', self::STAFF],
+        'helping-attendees' => ['Helping attendees', 'person-raised-hand', 'Lost passes, walk-ins and My AgriPass.', self::STAFF],
         'events' => ['Setting up an event', 'calendar-event', 'Creating events, sessions and registration questions.', self::ADMIN],
-        'registrations' => ['Registrations and payments', 'cash-coin', 'Payment statuses and verifying payments.', self::ADMIN],
+        'registrations' => ['Registrations', 'people', 'Review and export registrants.', self::ADMIN],
         'certificates' => ['CPD certificates', 'award', 'Eligibility, issuing, revoking and verification.', self::ADMIN],
         'reports' => ['Reports and exports', 'bar-chart', 'Event figures, the summary PDF and PRC exports.', self::ADMIN],
         'members' => ['Members', 'person-vcard', 'Finding members and correcting their details.', self::ADMIN],
         'users' => ['Staff accounts', 'people', 'Adding staff, resetting passwords and roles (Super Admin).', self::ADMIN],
-        'troubleshooting' => ['Troubleshooting', 'tools', 'Camera, offline, payment and email problems.', self::STAFF],
+        'troubleshooting' => ['Troubleshooting', 'tools', 'Camera, offline and email problems.', self::STAFF],
     ];
 
     /** @return list<array{slug: string, title: string, icon: string, summary: string, audience: string, html: string}> */
@@ -128,7 +128,6 @@ final class HelpGuide
     .result { font-weight: bold; padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
     .result.valid { background: #d8f0e0; color: #146c43; }
     .result.duplicate, .result.invalid { background: #f8d7da; color: #a52834; }
-    .result.unpaid { background: #ffe8b3; color: #7a5300; }
     .result.wrong { background: #fff3cd; color: #7a5300; }
 </style></head><body>
 <div class="cover">

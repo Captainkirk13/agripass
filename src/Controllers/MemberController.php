@@ -17,10 +17,11 @@ use PDOException;
 final class MemberController
 {
     private const PAGE_SIZE = 50;
-    private const PROFILE_COLUMNS = 'm.member_id, m.paa_id_number, m.prc_license_number, m.first_name, m.last_name, m.email,
-        m.contact_number, m.chapter_region, m.membership_status, m.created_at, m.last_portal_login_at';
+    private const PROFILE_COLUMNS = 'm.member_id, m.prc_license_number, m.first_name, m.last_name, m.email,
+        m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies,
+        m.chapter_region, m.membership_status, m.created_at, m.last_portal_login_at';
 
-    /** Admin member directory: search by name, email, PRC license or PAA ID, filter by status and chapter. */
+    /** Admin member directory: search by name, email, PRC license or PRC license, filter by status and chapter. */
     public static function index(Request $request): void
     {
         Auth::require(Auth::ADMINS);
@@ -57,7 +58,7 @@ final class MemberController
         Auth::require(Auth::ADMINS);
         $member = self::find($request->param('id'));
         $registrations = Database::all(
-            "SELECT r.registration_id, r.registration_date, r.payment_status, r.amount_paid, r.payment_reference,
+            "SELECT r.registration_id, r.registration_date,
                     e.event_id, e.title, e.start_date, e.end_date, e.status AS event_status, e.cpd_units,
                     (SELECT COUNT(*) FROM event_sessions s WHERE s.event_id = e.event_id) AS sessions_total,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
@@ -87,11 +88,12 @@ final class MemberController
 
         try {
             Database::run(
-                'UPDATE members SET first_name = ?, last_name = ?, email = ?, contact_number = ?, chapter_region = ?,
-                                    prc_license_number = ?, paa_id_number = ?, membership_status = ?
-                 WHERE member_id = ?',
-                [$data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['chapter_region'],
-                 $data['prc_license_number'], $data['paa_id_number'], $data['membership_status'], $member['member_id']],
+                'UPDATE members SET first_name = ?, last_name = ?, email = ?, contact_number = ?, designation = ?, nickname = ?,
+                                    birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?,
+                                    prc_license_number = ?, membership_status = ? WHERE member_id = ?',
+                [$data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['designation'], $data['nickname'],
+                 $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'],
+                 $data['prc_license_number'], $data['membership_status'], $member['member_id']],
             );
         } catch (PDOException $e) {
             if ($e->getCode() !== '23000') {
@@ -131,8 +133,8 @@ final class MemberController
         if ($q !== '') {
             $like = '%' . addcslashes($q, '%_\\') . '%';
             $clauses[] = "(CONCAT(m.first_name, ' ', m.last_name) LIKE ? OR CONCAT(m.last_name, ', ', m.first_name) LIKE ?
-                           OR m.email LIKE ? OR m.prc_license_number LIKE ? OR m.paa_id_number LIKE ?)";
-            array_push($params, $like, $like, $like, $like, $like);
+                           OR m.email LIKE ? OR m.prc_license_number LIKE ?)";
+            array_push($params, $like, $like, $like, $like);
         }
         $status = (string) $request->query('status', '');
         if (in_array($status, MemberProfile::STATUSES, true)) {
@@ -148,25 +150,4 @@ final class MemberController
         return [$clauses ? 'WHERE ' . implode(' AND ', $clauses) : '', $params];
     }
 
-    /**
-     * Returning-member auto-fill. Requires the email plus the PRC license or PAA ID on file,
-     * so a profile can't be pulled up with an email address alone.
-     */
-    public static function lookup(Request $request): void
-    {
-        RateLimiter::assertUnder('member.lookup_failed', 10, 15);
-        $data = $request->validate(['email' => 'required', 'id_number' => 'required']);
-
-        $member = Database::one(
-            'SELECT first_name, last_name, email, contact_number, chapter_region, prc_license_number, paa_id_number, membership_status
-             FROM members WHERE email = ? AND (prc_license_number = ? OR paa_id_number = ?)',
-            [strtolower((string) $data['email']), $data['id_number'], $data['id_number']],
-        );
-        if ($member === null) {
-            AuditLog::record(null, 'member.lookup_failed');
-            throw new HttpException(404, "We couldn't find a member with those details. Please fill in the form below.");
-        }
-
-        Response::json(['member' => $member]);
-    }
 }

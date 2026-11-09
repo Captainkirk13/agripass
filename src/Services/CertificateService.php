@@ -9,8 +9,6 @@ use PDOException;
 
 final class CertificateService
 {
-    private const CLEARED_PAYMENT = ['Paid', 'Waived'];
-
     /**
      * One row per registration with attendance progress and why it does or doesn't qualify.
      * Every session of the event counts toward the requirement.
@@ -21,7 +19,7 @@ final class CertificateService
         $minPct = (int) $event['cpd_min_attendance_pct'];
 
         $rows = Database::all(
-            "SELECT r.registration_id, r.payment_status, r.qr_token,
+            "SELECT r.registration_id, r.qr_token,
                     m.first_name, m.last_name, m.email, m.prc_license_number, m.chapter_region,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = r.event_id) AS sessions_attended,
@@ -36,7 +34,7 @@ final class CertificateService
 
         return array_map(static function (array $row) use ($total, $minPct): array {
             $attended = (int) $row['sessions_attended'];
-            $reason = self::ineligibleReason($row['payment_status'], $attended, $total, $minPct);
+            $reason = self::ineligibleReason($attended, $total, $minPct);
 
             return [
                 ...$row,
@@ -51,11 +49,10 @@ final class CertificateService
     }
 
     /** Null when the attendee qualifies for a certificate. */
-    public static function ineligibleReason(string $paymentStatus, int $attended, int $total, int $minPct): ?string
+    public static function ineligibleReason(int $attended, int $total, int $minPct): ?string
     {
         return match (true) {
             $total === 0 => 'The event has no sessions.',
-            !in_array($paymentStatus, self::CLEARED_PAYMENT, true) => "Payment is {$paymentStatus}.",
             self::attendancePct($attended, $total) < $minPct => "Attended {$attended} of {$total} sessions; {$minPct}% required.",
             default => null,
         };

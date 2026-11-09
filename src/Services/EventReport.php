@@ -18,7 +18,7 @@ final class EventReport
     {
         $eventId = (int) $event['event_id'];
         $registrants = Database::all(
-            "SELECT r.registration_id, r.payment_status, r.amount_paid, r.custom_responses,
+            "SELECT r.registration_id, r.custom_responses,
                     m.chapter_region, m.prc_license_number, m.membership_status,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = r.event_id) AS sessions_attended
@@ -50,14 +50,6 @@ final class EventReport
 
     private static function kpis(array $event, array $registrants, array $sessions): array
     {
-        $payments = ['Pending' => 0, 'Paid' => 0, 'Waived' => 0, 'Refunded' => 0];
-        $revenue = 0.0;
-        foreach ($registrants as $r) {
-            $payments[$r['payment_status']]++;
-            if ($r['payment_status'] === 'Paid') {
-                $revenue += (float) $r['amount_paid'];
-            }
-        }
         $registered = count($registrants);
         $attended = count(array_filter($registrants, static fn ($r) => (int) $r['sessions_attended'] > 0));
         $eligibility = CertificateService::eligibility($event);
@@ -67,10 +59,6 @@ final class EventReport
             'registered' => $registered,
             'attended' => $attended,
             'turnout_pct' => self::pct($attended, $registered),
-            'cleared' => $payments['Paid'] + $payments['Waived'],
-            'payments' => $payments,
-            'revenue' => $revenue,
-            'outstanding' => $payments['Pending'] * (float) $event['registration_fee'],
             'cpd_eligible' => count(array_filter($eligibility, static fn ($r) => $r['eligible'])),
             'certificates_issued' => count(array_filter($eligibility, static fn ($r) => $r['certificate_id'] !== null && $r['revoked_at'] === null)),
             'total_scans' => $scans,
@@ -80,7 +68,7 @@ final class EventReport
 
     private static function sessions(array $registrants, array $sessions): array
     {
-        $cleared = count(array_filter($registrants, static fn ($r) => in_array($r['payment_status'], ['Paid', 'Waived'], true)));
+        $registered = count($registrants);
 
         return array_map(static fn (array $s) => [
             'session_id' => (int) $s['session_id'],
@@ -90,7 +78,7 @@ final class EventReport
             'end_time' => $s['end_time'],
             'attended' => (int) $s['attended'],
             'offline' => (int) $s['offline'],
-            'turnout_pct' => self::pct((int) $s['attended'], $cleared),
+            'turnout_pct' => self::pct((int) $s['attended'], $registered),
         ], $sessions);
     }
 

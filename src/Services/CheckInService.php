@@ -12,11 +12,8 @@ final class CheckInService
     public const VALID = 'valid';
     public const INVALID = 'invalid';
     public const WRONG_EVENT = 'wrong_event';
-    public const UNPAID = 'unpaid';
     public const DUPLICATE = 'duplicate';
     public const ALREADY_SYNCED = 'already_synced';
-
-    private const CLEARED_PAYMENT = ['Paid', 'Waived'];
 
     /**
      * @param array $session row from event_sessions; must belong to the scanner's event context
@@ -46,7 +43,7 @@ final class CheckInService
         }
 
         $registration = Database::one(
-            'SELECT r.registration_id, r.event_id, r.payment_status, r.qr_token,
+            'SELECT r.registration_id, r.event_id, r.qr_token,
                     m.member_id, m.first_name, m.last_name, m.chapter_region, m.prc_license_number
              FROM registrations r JOIN members m ON m.member_id = r.member_id
              WHERE r.registration_id = ? AND r.qr_token = ?',
@@ -61,12 +58,7 @@ final class CheckInService
             'name' => $registration['first_name'] . ' ' . $registration['last_name'],
             'chapter_region' => $registration['chapter_region'],
             'prc_license_number' => $registration['prc_license_number'],
-            'payment_status' => $registration['payment_status'],
         ];
-
-        if (!in_array($registration['payment_status'], self::CLEARED_PAYMENT, true)) {
-            return ['result' => self::UNPAID, 'message' => 'Payment Pending - Direct to Registration Desk.', 'attendee' => $attendee];
-        }
 
         $duplicate = self::existingAttendance($attendee['registration_id'], (int) $session['session_id']);
         if ($duplicate !== null) {

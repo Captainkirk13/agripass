@@ -1,6 +1,6 @@
 import { api } from '../../lib/api.js';
 import { CHAPTERS } from '../../lib/chapters.js';
-import { emptyState, esc, formatDate, formatDateTime, formData, formatPeso, openModal, paymentBadge, statusBadge, toast } from '../../lib/ui.js';
+import { emptyState, esc, formatDate, formatDateTime, formData, openModal, statusBadge, toast } from '../../lib/ui.js';
 
 export const MEMBERSHIP_LABELS = { Active: 'Active member', Inactive: 'Inactive member', NonMember: 'Non-member' };
 const MEMBERSHIP_CLASSES = { Active: 'text-bg-success', Inactive: 'text-bg-secondary', NonMember: 'text-bg-light border' };
@@ -28,7 +28,7 @@ export async function renderMembers() {
         <div class="card">
             <div class="card-header bg-white py-3 d-flex flex-wrap gap-2 align-items-center">
                 <input type="search" class="form-control form-control-sm" style="max-width:300px" id="member-search"
-                       placeholder="Search name, email, PRC license, PAA ID…" value="${esc(filters.q)}">
+                       placeholder="Search name, email, PRC license…" value="${esc(filters.q)}">
                 <select class="form-select form-select-sm" style="max-width:180px" id="status-filter" aria-label="Membership status">
                     <option value="">All statuses</option>
                     ${Object.entries(MEMBERSHIP_LABELS).map(([v, l]) => `<option value="${v}" ${filters.status === v ? 'selected' : ''}>${l}</option>`).join('')}
@@ -70,14 +70,13 @@ async function load() {
         table.innerHTML = `
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead><tr><th style="min-width:220px">Member</th><th>PRC license / PAA ID</th><th>Chapter</th><th>Status</th>
+                    <thead><tr><th style="min-width:220px">Member</th><th>PRC license</th><th>Chapter</th><th>Status</th>
                         <th>Activity</th><th>Portal sign-in</th></tr></thead>
                     <tbody>${data.members.map((m) => `
                         <tr class="clickable-row" data-member="${m.member_id}">
                             <td><a class="fw-semibold text-decoration-none" href="#/members/${m.member_id}">${esc(m.last_name)}, ${esc(m.first_name)}</a>
                                 <div class="small text-muted">${esc(m.email)}</div></td>
-                            <td class="small text-nowrap">${esc(m.prc_license_number) || '<span class="text-muted">—</span>'}
-                                ${m.paa_id_number ? `<div class="text-muted">${esc(m.paa_id_number)}</div>` : ''}</td>
+                            <td class="small text-nowrap">${esc(m.prc_license_number) || '<span class="text-muted">—</span>'}</td>
                             <td class="small">${esc(m.chapter_region) || '<span class="text-muted">—</span>'}</td>
                             <td class="text-nowrap">${membershipBadge(m.membership_status)}</td>
                             <td class="small text-nowrap">${plural(m.registrations, 'event')}
@@ -128,7 +127,12 @@ export async function renderMemberDetail(memberId) {
                     <div class="card-body"><dl class="row mb-0 small">
                         ${row('Mobile number', esc(member.contact_number))}
                         ${row('PRC license', esc(member.prc_license_number))}
-                        ${row('PAA ID', esc(member.paa_id_number))}
+                        ${row('Designation / position', esc(member.designation))}
+                        ${row('Nickname', esc(member.nickname))}
+                        ${row('Birthdate', formatDate(member.birthdate))}
+                        ${row('Flight arrival', esc(member.flight_arrival))}
+                        ${row('Flight departure', esc(member.flight_departure))}
+                        ${row('Food allergies', esc(member.food_allergies))}
                         ${row('Chapter / region', esc(member.chapter_region))}
                         ${row('First registered', formatDate(member.created_at))}
                         ${row('Last portal sign-in', member.last_portal_login_at ? formatDateTime(member.last_portal_login_at) : 'Never')}
@@ -148,14 +152,12 @@ export async function renderMemberDetail(memberId) {
             ${registrations.length ? `
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
-                    <thead><tr><th>Event</th><th>Payment</th><th class="text-center">Sessions</th><th>CPD certificate</th><th>Registered</th></tr></thead>
+                    <thead><tr><th>Event</th><th class="text-center">Sessions</th><th>CPD certificate</th><th>Registered</th></tr></thead>
                     <tbody>${registrations.map((r) => `
                         <tr>
                             <td><a class="fw-semibold text-decoration-none" href="#/events/${r.event_id}/registrations">${esc(r.title)}</a>
                                 <div class="small text-muted">${formatDate(r.start_date)} ${statusBadge(r.event_status)}</div></td>
-                            <td>${paymentBadge(r.payment_status)}
-                                ${Number(r.amount_paid) > 0 ? `<div class="small text-muted">${formatPeso(r.amount_paid)}</div>` : ''}
-                                ${r.payment_reference ? `<div class="small text-muted">${esc(r.payment_reference)}</div>` : ''}</td>
+
                             <td class="text-center">${r.sessions_attended} / ${r.sessions_total}</td>
                             <td class="small">${certificateCell(r)}</td>
                             <td class="small text-nowrap">${formatDateTime(r.registration_date)}</td>
@@ -203,14 +205,19 @@ function editMember(member, onSaved) {
                 <div class="col-12"><label class="form-label" for="m-email">Email</label>
                     <input class="form-control" type="email" id="m-email" name="email" value="${esc(member.email)}" maxlength="100" required>
                     <div class="form-text">The member signs in to My AgriPass with this address. Changing it cancels any sign-in links already sent.</div></div>
-                ${input('contact_number', 'Mobile number', 'type="tel" maxlength="20"')}
+                ${input('contact_number', 'Contact number', 'type="tel" maxlength="20"')}
+                ${input('designation', 'Designation / position', 'maxlength="100"')}
+                ${input('nickname', 'Nickname', 'maxlength="50"')}
+                ${input('birthdate', 'Birthdate', 'type="date"')}
+                ${input('flight_arrival', 'Flight arrival', 'maxlength="100"')}
+                ${input('flight_departure', 'Flight departure', 'maxlength="100"')}
+                <div class="col-12"><label class="form-label" for="m-food_allergies">Food allergies</label><textarea class="form-control" id="m-food_allergies" name="food_allergies" maxlength="1000">${esc(member.food_allergies)}</textarea></div>
                 <div class="col-md-6"><label class="form-label" for="m-chapter_region">Chapter / region</label>
                     <select class="form-select" id="m-chapter_region" name="chapter_region">
                         <option value="">Not set</option>
                         ${chapters.map((c) => `<option ${c === member.chapter_region ? 'selected' : ''}>${esc(c)}</option>`).join('')}
                     </select></div>
                 ${input('prc_license_number', 'PRC license number', 'maxlength="50"')}
-                ${input('paa_id_number', 'PAA ID number', 'maxlength="50"')}
                 <div class="col-md-6"><label class="form-label" for="m-membership_status">PAA membership</label>
                     <select class="form-select" id="m-membership_status" name="membership_status">
                         ${Object.entries(MEMBERSHIP_LABELS).map(([v, l]) => `<option value="${v}" ${member.membership_status === v ? 'selected' : ''}>${l}</option>`).join('')}

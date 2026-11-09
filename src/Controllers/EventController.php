@@ -30,29 +30,31 @@ final class EventController
         'start_date' => 'required',
         'end_date' => 'required',
         'description' => 'optional',
-        'registration_fee' => 'optional',
         'cpd_units' => 'optional',
         'cpd_min_attendance_pct' => 'optional',
         'prc_accreditation_no' => 'optional',
         'cert_signatory_name' => 'optional',
         'cert_signatory_title' => 'optional',
+        'cert_signatory_2_name' => 'optional',
+        'cert_signatory_2_title' => 'optional',
     ];
 
     public static function index(Request $request): void
     {
         Auth::require();
-        Response::json(['events' => Database::all(
+        Response::json(['events' => array_map(static function (array $event): array { unset($event['registration_fee'], $event['cert_signature_path'], $event['cert_signature_2_path']); return $event; }, Database::all(
             'SELECT e.*,
                     (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.event_id) AS registration_count,
                     (SELECT COUNT(*) FROM event_sessions s WHERE s.event_id = e.event_id) AS session_count
              FROM events e ORDER BY e.start_date DESC',
-        )]);
+        ))]);
     }
 
     public static function show(Request $request): void
     {
         Auth::require();
         $event = self::withDetails(EventContext::find($request->param('id')));
+        unset($event['registration_fee']);
         $event['stats'] = self::stats((int) $event['event_id']);
         Response::json(['event' => $event]);
     }
@@ -64,7 +66,7 @@ final class EventController
         if ($event === null) {
             throw new HttpException(404, 'No event is currently open.');
         }
-        unset($event['created_by'], $event['cert_signature_path']);
+        unset($event['created_by'], $event['cert_signature_path'], $event['cert_signature_2_path'], $event['registration_fee']);
         Response::json(['event' => self::withDetails($event)]);
     }
 
@@ -73,13 +75,12 @@ final class EventController
         $user = Auth::require(Auth::ADMINS);
         $data = self::validated($request);
         $id = Database::insert(
-            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, registration_fee,
-                                 cpd_units, cpd_min_attendance_pct, prc_accreditation_no, cert_signatory_name, cert_signatory_title, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, cpd_units, cpd_min_attendance_pct, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [...self::columns($data), $user['user_id']],
         );
         AuditLog::record($user['user_id'], 'event.create', 'event', $id);
-        Response::json(['event' => EventContext::find($id)], 201);
+        Response::json(['event' => self::withoutLegacyFee(EventContext::find($id))], 201);
     }
 
     public static function update(Request $request): void
@@ -90,16 +91,16 @@ final class EventController
         $data = self::validated($request);
         Database::run(
             'UPDATE events SET title = ?, event_type = ?, description = ?, venue = ?, start_date = ?, end_date = ?,
-                               registration_fee = ?, cpd_units = ?, cpd_min_attendance_pct = ?, prc_accreditation_no = ?,
-                               cert_signatory_name = ?, cert_signatory_title = ?
+                               cpd_units = ?, cpd_min_attendance_pct = ?, prc_accreditation_no = ?,
+                               cert_signatory_name = ?, cert_signatory_title = ?, cert_signatory_2_name = ?, cert_signatory_2_title = ?
              WHERE event_id = ?',
             [...self::columns($data), $event['event_id']],
         );
         AuditLog::record($user['user_id'], 'event.update', 'event', (int) $event['event_id']);
-        Response::json(['event' => EventContext::find((int) $event['event_id'])]);
+        Response::json(['event' => self::withoutLegacyFee(EventContext::find((int) $event['event_id']))]);
     }
 
-    /** Sets the global Active Event context used by registration, payments and scanners. */
+    /** Sets the global Active Event context used by registration and scanners. */
     public static function activate(Request $request): void
     {
         $user = Auth::require(Auth::ADMINS);
@@ -115,7 +116,7 @@ final class EventController
         $pdo->commit();
 
         AuditLog::record($user['user_id'], 'event.activate', 'event', (int) $event['event_id']);
-        Response::json(['event' => EventContext::find((int) $event['event_id'])]);
+        Response::json(['event' => self::withoutLegacyFee(EventContext::find((int) $event['event_id']))]);
     }
 
     public static function transition(Request $request): void
@@ -131,7 +132,13 @@ final class EventController
         Database::run('UPDATE events SET status = ?, is_active = ? WHERE event_id = ?', [$status, $isActive, $event['event_id']]);
 
         AuditLog::record($user['user_id'], 'event.status', 'event', (int) $event['event_id'], ['from' => $event['status'], 'to' => $status]);
-        Response::json(['event' => EventContext::find((int) $event['event_id'])]);
+        Response::json(['event' => self::withoutLegacyFee(EventContext::find((int) $event['event_id']))]);
+    }
+
+    private static function withoutLegacyFee(array $event): array
+    {
+        unset($event['registration_fee']);
+        return $event;
     }
 
     private static function withDetails(array $event): array
@@ -150,17 +157,7 @@ final class EventController
 
     private static function stats(int $eventId): array
     {
-        $payments = ['Pending' => 0, 'Paid' => 0, 'Waived' => 0, 'Refunded' => 0];
-        $revenue = 0.0;
-        foreach (Database::all(
-            'SELECT payment_status, COUNT(*) AS total, SUM(amount_paid) AS amount FROM registrations WHERE event_id = ? GROUP BY payment_status',
-            [$eventId],
-        ) as $row) {
-            $payments[$row['payment_status']] = (int) $row['total'];
-            if ($row['payment_status'] === 'Paid') {
-                $revenue = (float) $row['amount'];
-            }
-        }
+        $registrations = (int) Database::one('SELECT COUNT(*) AS total FROM registrations WHERE event_id = ?', [$eventId])['total'];
 
         $checkedIn = (int) Database::one(
             'SELECT COUNT(DISTINCT a.registration_id) AS total
@@ -180,9 +177,7 @@ final class EventController
         }
 
         return [
-            'registrations' => array_sum($payments),
-            'payments' => $payments,
-            'revenue' => $revenue,
+            'registrations' => $registrations,
             'checked_in' => $checkedIn,
             'session_attendance' => (object) $sessionAttendance,
         ];
@@ -204,12 +199,12 @@ final class EventController
         if (!$errors && $data['end_date'] < $data['start_date']) {
             $errors['end_date'] = 'End date cannot be before the start date.';
         }
-        foreach (['registration_fee', 'cpd_units'] as $field) {
+        foreach (['cpd_units'] as $field) {
             if ($data[$field] !== null && (!is_numeric($data[$field]) || $data[$field] < 0)) {
                 $errors[$field] = 'Must be a non-negative number.';
             }
         }
-        foreach (['cert_signatory_name' => 100, 'cert_signatory_title' => 150] as $field => $max) {
+        foreach (['cert_signatory_name' => 100, 'cert_signatory_title' => 150, 'cert_signatory_2_name' => 100, 'cert_signatory_2_title' => 150] as $field => $max) {
             if ($data[$field] !== null && mb_strlen((string) $data[$field]) > $max) {
                 $errors[$field] = "Use {$max} characters or fewer.";
             }
@@ -234,12 +229,13 @@ final class EventController
             $data['venue'],
             $data['start_date'],
             $data['end_date'],
-            $data['registration_fee'] ?? 0,
             $data['cpd_units'] ?? 0,
             $data['cpd_min_attendance_pct'] ?? 80,
             $data['prc_accreditation_no'],
             $data['cert_signatory_name'],
             $data['cert_signatory_title'],
+            $data['cert_signatory_2_name'],
+            $data['cert_signatory_2_title'],
         ];
     }
 }

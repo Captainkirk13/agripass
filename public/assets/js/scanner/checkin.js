@@ -1,7 +1,6 @@
 import { api, ApiError } from '../lib/api.js';
 import * as store from './store.js';
 
-const CLEARED_PAYMENT = ['Paid', 'Waived'];
 const SCAN_TIMEOUT_MS = 4000;
 const SYNC_TIMEOUT_MS = 20000;
 const SYNC_BATCH = 500;
@@ -12,7 +11,6 @@ const SYNCED_RESULTS = ['valid', 'already_synced', 'duplicate'];
 export const MESSAGES = {
     valid: 'Welcome!',
     duplicate: 'Already Checked In for this Session.',
-    unpaid: 'Payment Pending - Direct to Registration Desk.',
     wrong_event: 'This pass is for a different event.',
     invalid: 'Unrecognized or tampered QR pass.',
     not_in_roster: 'Pass not in the offline roster. It may be a new registration — direct to the Registration Desk.',
@@ -86,7 +84,6 @@ export class CheckInEngine extends EventTarget {
         return {
             checkedIn,
             registered: registrations.length,
-            cleared: registrations.filter((r) => CLEARED_PAYMENT.includes(r.payment_status)).length,
             pending: this.pending,
             problems: this.problems.length,
         };
@@ -153,7 +150,6 @@ export class CheckInEngine extends EventTarget {
     afterServerResult(token, sessionId, res) {
         const local = this.byToken.get(token);
         const attendee = res.attendee || (local && { ...local });
-        if (local && res.attendee?.payment_status) local.payment_status = res.attendee.payment_status;
         if (attendee && SYNCED_RESULTS.includes(res.result)) {
             this.recordAttendance(attendee.registration_id, sessionId, res.check_in_time);
         }
@@ -174,9 +170,6 @@ export class CheckInEngine extends EventTarget {
             return { result: 'invalid', message: MESSAGES.not_in_roster, offline: true };
         }
         const attendee = { ...registration };
-        if (!CLEARED_PAYMENT.includes(registration.payment_status)) {
-            return { result: 'unpaid', message: MESSAGES.unpaid, attendee, offline: true };
-        }
         const previous = this.attendance.get(key(registration.registration_id, sessionId));
         if (previous) {
             return { result: 'duplicate', message: MESSAGES.duplicate, check_in_time: previous, attendee, offline: true };

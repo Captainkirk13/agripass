@@ -48,7 +48,10 @@ final class CertificateController
                 'prc_accreditation_no' => $event['prc_accreditation_no'],
                 'signatory_name' => $event['cert_signatory_name'],
                 'signatory_title' => $event['cert_signatory_title'],
+                'signatory_2_name' => $event['cert_signatory_2_name'],
+                'signatory_2_title' => $event['cert_signatory_2_title'],
                 'has_signature' => CertificatePdf::signatureFile($event['cert_signature_path']) !== null,
+                'has_signature_2' => CertificatePdf::signatureFile($event['cert_signature_2_path']) !== null,
             ],
             'can_issue' => self::issueBlocker($event),
             'certificates' => $public,
@@ -202,6 +205,10 @@ final class CertificateController
         $event = EventContext::find($request->param('id'));
         EventContext::assertEditable($event);
 
+        $which = (string) ($_POST['signatory'] ?? '1');
+        if (!in_array($which, ['1', '2'], true)) {
+            throw new HttpException(422, 'Validation failed.', ['signatory' => 'Choose signatory 1 or 2.']);
+        }
         $file = $_FILES['signature'] ?? null;
         if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             throw new HttpException(422, 'Validation failed.', ['signature' => 'Choose a PNG or JPEG image.']);
@@ -225,15 +232,16 @@ final class CertificateController
         imagealphablending($image, false);
         imagesavealpha($image, true);
 
-        $relative = sprintf('storage/uploads/signatures/event-%d-%s.png', $event['event_id'], bin2hex(random_bytes(4)));
+        $relative = sprintf('storage/uploads/signatures/event-%d-%s-%s.png', $event['event_id'], $which, bin2hex(random_bytes(4)));
+        $pathColumn = $which === '2' ? 'cert_signature_2_path' : 'cert_signature_path';
         $absolute = dirname(__DIR__, 2) . '/' . $relative;
         if (!is_dir(dirname($absolute))) {
             mkdir(dirname($absolute), 0775, true);
         }
         imagepng($image, $absolute);
 
-        $previous = CertificatePdf::signatureFile($event['cert_signature_path']);
-        Database::run('UPDATE events SET cert_signature_path = ? WHERE event_id = ?', [$relative, $event['event_id']]);
+        $previous = CertificatePdf::signatureFile($event[$pathColumn]);
+        Database::run("UPDATE events SET {$pathColumn} = ? WHERE event_id = ?", [$relative, $event['event_id']]);
         if ($previous !== null) {
             @unlink($previous);
         }
@@ -247,7 +255,7 @@ final class CertificateController
             $event['status'] !== 'Completed' => $event['status'] === 'Archived'
                 ? 'Certificates cannot be issued for an archived event.'
                 : 'Mark the event as Completed before issuing certificates, so attendance is final.',
-            empty($event['cert_signatory_name']) => 'Add the certificate signatory in the event settings first.',
+            empty($event['cert_signatory_name']) || empty($event['cert_signatory_2_name']) => 'Add both certificate signatories in the event settings first.',
             default => null,
         };
     }

@@ -13,7 +13,6 @@ const RECENT_LIMIT = 12;
 const RESULTS = {
     valid: { tone: 'success', icon: 'check-circle-fill', title: 'Checked in', sound: 'success' },
     duplicate: { tone: 'danger', icon: 'exclamation-octagon-fill', title: 'Already checked in', sound: 'error' },
-    unpaid: { tone: 'unpaid', icon: 'cash-coin', title: 'Payment pending', sound: 'warning' },
     wrong_event: { tone: 'warning', icon: 'exclamation-triangle-fill', title: 'Wrong event', sound: 'warning' },
     invalid: { tone: 'danger', icon: 'x-octagon-fill', title: 'Invalid pass', sound: 'error' },
     error: { tone: 'danger', icon: 'x-octagon-fill', title: 'Check-in failed', sound: 'error' },
@@ -400,7 +399,7 @@ function updateStatus() {
     const roster = document.getElementById('roster-status');
     if (roster && engine.roster) {
         roster.innerHTML = `<i class="bi bi-people me-1"></i><strong>${s.registered}</strong> attendees in roster
-            (${s.cleared} paid or waived) · downloaded ${esc(clock(engine.roster.downloaded_at))}
+            (all registrations) · downloaded ${esc(clock(engine.roster.downloaded_at))}
             ${engine.reachable ? '' : '<span class="badge text-bg-secondary ms-1">offline copy</span>'}`;
     }
     const setupSync = document.getElementById('setup-sync');
@@ -439,7 +438,7 @@ function showProblems() {
     openModal({
         title: 'Rejected offline scans',
         body: `<p class="small text-muted">These scans were accepted offline but the server refused them, usually because the
-            payment status changed or the pass was replaced. Send these attendees to the registration desk.</p>
+            the pass was replaced. Send these attendees to the registration desk.</p>
             <ul class="list-group list-group-flush">${rows}</ul>`,
         submitLabel: 'Dismiss all',
         submitClass: 'btn-outline-danger',
@@ -625,9 +624,7 @@ async function renderStaff() {
                 </div>
                 ${r.checked_in_at
                     ? `<span class="badge text-bg-light text-nowrap"><i class="bi bi-check2"></i> ${esc(clock(r.checked_in_at))}</span>`
-                    : ['Paid', 'Waived'].includes(r.payment_status)
-                        ? `<button class="btn btn-sm btn-primary" data-token="${esc(r.qr_token)}">Check in</button>`
-                        : `<span class="badge badge-status pay-${esc(r.payment_status)}">${esc(r.payment_status)}</span>`}
+                    : `<button class="btn btn-sm btn-primary" data-token="${esc(r.qr_token)}">Check in</button>`}
             </li>`).join('') || (search.value.trim().length >= 2 ? '<li class="small text-muted py-2">No attendee matches.</li>' : '');
     });
     results.addEventListener('click', async (e) => {

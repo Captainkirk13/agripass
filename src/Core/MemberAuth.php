@@ -54,7 +54,7 @@ final class MemberAuth
         $id = $_SESSION['member_id'] ?? null;
 
         return $id === null ? null : Database::one(
-            'SELECT member_id, first_name, last_name, email, contact_number, chapter_region, prc_license_number, paa_id_number,
+            'SELECT member_id, first_name, last_name, email, contact_number, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies, chapter_region, prc_license_number,
                     membership_status, created_at
              FROM members WHERE member_id = ?',
             [$id],

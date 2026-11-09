@@ -1,7 +1,7 @@
 import { api } from '../lib/api.js';
 import { CHAPTERS } from '../lib/chapters.js';
 import {
-    clearFormErrors, esc, formatDate, formatDateRange, formatPeso, paymentBadge, showFormErrors, toast, toastError, withBusy,
+    clearFormErrors, esc, formatDate, formatDateRange, formatDuration, scheduledHours, showFormErrors, toast, toastError, withBusy,
 } from '../lib/ui.js';
 import { passPageUrl } from './pass-card.js';
 
@@ -13,7 +13,12 @@ const PROFILE_FIELDS = [
     ['last_name', 'Last name', { required: true, maxlength: 50, autocomplete: 'family-name' }],
     ['contact_number', 'Mobile number', { maxlength: 20, type: 'tel', autocomplete: 'tel', placeholder: '09XX XXX XXXX' }],
     ['prc_license_number', 'PRC license number', { maxlength: 50 }],
-    ['paa_id_number', 'PAA ID number', { maxlength: 50 }],
+    ['designation', 'Designation / position', { maxlength: 100 }],
+    ['nickname', 'Nickname', { maxlength: 50 }],
+    ['birthdate', 'Birthdate', { type: 'date' }],
+    ['flight_arrival', 'Flight arrival', { maxlength: 100 }],
+    ['flight_departure', 'Flight departure', { maxlength: 100 }],
+    ['food_allergies', 'Food allergies', { maxlength: 1000 }],
 ];
 
 async function start() {
@@ -149,8 +154,6 @@ function registrationCard(r) {
     const { event } = r;
     const [state, stateClass] = EVENT_STATE[event.status] || [event.status, 'text-bg-light'];
     const ended = event.status !== 'Active';
-    const fee = Number(event.registration_fee);
-    const due = r.payment_status === 'Pending' && fee > 0;
 
     return `
         <div class="card mb-3"><div class="card-body">
@@ -163,20 +166,18 @@ function registrationCard(r) {
                 <div><span class="badge ${stateClass}">${state}</span></div>
             </div>
             <div class="d-flex flex-wrap gap-4 small my-3">
-                <div><div class="text-muted">Payment</div>${paymentBadge(r.payment_status)}${due ? ` <span class="text-muted">${formatPeso(fee)} due</span>` : ''}</div>
                 ${r.sessions_total ? `<div><div class="text-muted">Sessions attended</div><strong>${r.sessions_attended} of ${r.sessions_total}</strong></div>` : ''}
                 ${Number(event.cpd_units) > 0 ? `<div><div class="text-muted">CPD units</div><strong>${esc(Number(event.cpd_units))}</strong>
                     <span class="text-muted">(${event.cpd_min_attendance_pct}% attendance)</span></div>` : ''}
+                <div><div class="text-muted">Total scheduled attendance</div><strong>${formatDuration(event.scheduled_hours ?? scheduledHours(event.sessions || []))}</strong></div>
                 <div><div class="text-muted">Registered</div>${formatDate(r.registration_date)}</div>
             </div>
-            ${due && !ended ? `<div class="alert alert-warning small py-2">Your pass will be accepted once PAA verifies your payment.
-                Pay through your chapter or at the registration desk.</div>` : ''}
             ${r.certificate_note ? `<div class="alert alert-light border small py-2 mb-3"><i class="bi bi-info-circle me-1"></i>${esc(r.certificate_note)}</div>` : ''}
             <div class="d-flex flex-wrap gap-2">
                 ${r.certificate ? `<a class="btn btn-success btn-sm" href="/api/certificates/download?token=${encodeURIComponent(r.qr_token)}">
                     <i class="bi bi-award me-1"></i>Download CPD certificate</a>` : ''}
-                ${r.payment_status !== 'Refunded' ? `<a class="btn ${ended ? 'btn-outline-primary' : 'btn-primary'} btn-sm" href="${passPageUrl(r.qr_token)}">
-                    <i class="bi bi-qr-code me-1"></i>${ended ? 'View pass' : 'Open my QR pass'}</a>` : ''}
+                <a class="btn ${ended ? 'btn-outline-primary' : 'btn-primary'} btn-sm" href="${passPageUrl(r.qr_token)}">
+                    <i class="bi bi-qr-code me-1"></i>${ended ? 'View pass' : 'Open my QR pass'}</a>
             </div>
             ${r.certificate ? `<div class="small text-muted mt-2">Certificate no. ${esc(r.certificate.certificate_no)} &middot;
                 <a href="/verify/?code=${esc(r.certificate.verification_code)}">verify</a></div>` : ''}
@@ -197,7 +198,12 @@ function renderProfile(member) {
             ${row('Email', member.email)}
             ${row('Mobile number', member.contact_number)}
             ${row('PRC license number', member.prc_license_number)}
-            ${row('PAA ID number', member.paa_id_number)}
+            ${row('Designation / position', member.designation)}
+            ${row('Nickname', member.nickname)}
+            ${row('Birthdate', member.birthdate)}
+            ${row('Flight arrival', member.flight_arrival)}
+            ${row('Flight departure', member.flight_departure)}
+            ${row('Food allergies', member.food_allergies)}
             ${row('Chapter / region', member.chapter_region)}
         </div></div>`;
     document.getElementById('edit-profile').addEventListener('click', () => renderProfileForm(member));
@@ -205,13 +211,10 @@ function renderProfile(member) {
 
 function renderProfileForm(member) {
     const el = document.getElementById('profile');
-    const input = ([name, label, opts]) => `
-        <div class="mb-3">
-            <label class="form-label small" for="${name}">${label}${opts.required ? ' <span class="text-danger">*</span>' : ''}</label>
-            <input class="form-control form-control-sm" id="${name}" name="${name}" type="${opts.type || 'text'}" maxlength="${opts.maxlength}"
-                   value="${esc(member[name] ?? '')}" ${opts.required ? 'required' : ''}
-                   ${opts.autocomplete ? `autocomplete="${opts.autocomplete}"` : ''} ${opts.placeholder ? `placeholder="${opts.placeholder}"` : ''}>
-        </div>`;
+    const input = ([name, label, opts]) => `<div class="mb-3">
+        <label class="form-label small" for="${name}">${label}${opts.required ? ' <span class="text-danger">*</span>' : ''}</label>
+        ${name === 'food_allergies' ? `<textarea class="form-control form-control-sm" id="${name}" name="${name}" maxlength="${opts.maxlength}" rows="2">${esc(member[name] ?? '')}</textarea>` : `<input class="form-control form-control-sm" id="${name}" name="${name}" type="${opts.type || 'text'}" maxlength="${opts.maxlength}" value="${esc(member[name] ?? '')}" ${opts.required ? 'required' : ''} ${opts.autocomplete ? `autocomplete="${opts.autocomplete}"` : ''} ${opts.placeholder ? `placeholder="${opts.placeholder}"` : ''}>`}
+    </div>`;
     const chapters = CHAPTERS.includes(member.chapter_region) || !member.chapter_region ? CHAPTERS : [member.chapter_region, ...CHAPTERS];
 
     el.innerHTML = `

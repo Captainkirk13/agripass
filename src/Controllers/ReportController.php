@@ -79,8 +79,8 @@ final class ReportController
         $eligibility = array_column(CertificateService::eligibility($event), null, 'registration_id');
 
         $registrants = Database::all(
-            'SELECT r.registration_id, r.payment_status, r.amount_paid, r.payment_reference, r.registration_date, r.custom_responses,
-                    m.last_name, m.first_name, m.email, m.contact_number, m.prc_license_number, m.paa_id_number, m.chapter_region, m.membership_status
+            'SELECT r.registration_id, r.registration_date, r.custom_responses,
+                    m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.prc_license_number, m.chapter_region, m.membership_status
              FROM registrations r JOIN members m ON m.member_id = r.member_id
              WHERE r.event_id = ? ORDER BY m.last_name, m.first_name',
             [$event['event_id']],
@@ -94,8 +94,7 @@ final class ReportController
             $checkins[$a['registration_id']][$a['session_id']] = $a['check_in_time'];
         }
 
-        $header = ['Last name', 'First name', 'Email', 'Mobile', 'PRC license no.', 'PAA ID', 'Chapter / region', 'PAA membership',
-            'Payment status', 'Amount paid', 'Payment reference', 'Registered at'];
+        $header = ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'PRC license no.', 'Chapter / region', 'PAA membership', 'Registered at'];
         foreach ($sessions as $s) {
             $header[] = "Check-in: {$s['session_name']}";
         }
@@ -108,8 +107,7 @@ final class ReportController
             $cpd = $eligibility[(int) $r['registration_id']];
             $answers = json_decode((string) $r['custom_responses'], true) ?: [];
             $hasCertificate = $cpd['certificate_id'] !== null && $cpd['revoked_at'] === null;
-            $line = [$r['last_name'], $r['first_name'], $r['email'], $r['contact_number'], $r['prc_license_number'], $r['paa_id_number'],
-                $r['chapter_region'], $r['membership_status'], $r['payment_status'], $r['amount_paid'], $r['payment_reference'], $r['registration_date']];
+            $line = [$r['last_name'], $r['first_name'], $r['email'], $r['contact_number'], $r['designation'], $r['nickname'], $r['birthdate'], $r['flight_arrival'], $r['flight_departure'], $r['food_allergies'], $r['prc_license_number'], $r['chapter_region'], $r['membership_status'], $r['registration_date']];
             foreach ($sessions as $s) {
                 $line[] = $checkins[$r['registration_id']][$s['session_id']] ?? '';
             }
@@ -154,7 +152,7 @@ final class ReportController
     {
         $user = Auth::require(Auth::ADMINS);
         $rows = Database::all(
-            'SELECT m.last_name, m.first_name, m.email, m.contact_number, m.prc_license_number, m.paa_id_number, m.chapter_region,
+            'SELECT m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.prc_license_number, m.chapter_region,
                     m.membership_status, m.created_at,
                     (SELECT COUNT(*) FROM registrations r WHERE r.member_id = m.member_id) AS events,
                     (SELECT COALESCE(SUM(c.cpd_units), 0) FROM certificates c JOIN registrations r ON r.registration_id = c.registration_id
@@ -163,7 +161,7 @@ final class ReportController
         );
 
         TableExport::send($format, 'agripass-members-' . date('Y-m-d'), 'Members',
-            ['Last name', 'First name', 'Email', 'Mobile', 'PRC license no.', 'PAA ID', 'Chapter / region', 'PAA membership',
+            ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'PRC license no.', 'Chapter / region', 'PAA membership',
              'First registered', 'Events registered', 'CPD units earned'],
             array_map('array_values', $rows));
         AuditLog::record($user['user_id'], 'report.export', 'member', null, ['format' => "members.{$format}", 'rows' => count($rows)]);

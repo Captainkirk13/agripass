@@ -1,5 +1,5 @@
 import { api } from '../../lib/api.js';
-import { emptyState, esc, formatDate, formatDateTime, formatPeso, formatTime } from '../../lib/ui.js';
+import { emptyState, esc, formatDate, formatDateTime, formatTime } from '../../lib/ui.js';
 
 export async function renderReports(el, event) {
     const { report } = await api(`/events/${event.event_id}/report`);
@@ -19,17 +19,14 @@ export async function renderReports(el, event) {
             </div>
         </div>
         <div class="row g-3 mb-4">
-            ${kpi('Registered', kpis.registered, `${kpis.cleared} paid or waived`, 'people')}
+            ${kpi('Registered', kpis.registered, `${kpis.registered} registered`, 'people')}
             ${kpi('Attended', kpis.attended, `${kpis.turnout_pct}% turnout`, 'person-check')}
             ${kpi('CPD eligible', kpis.cpd_eligible, `${kpis.certificates_issued} certificates issued`, 'patch-check')}
             ${kpi('Check-ins', kpis.total_scans, `${kpis.offline_scans} synced from offline`, 'qr-code-scan')}
-            ${kpi('Revenue collected', formatPeso(kpis.revenue), `${kpis.payments.Paid} paid registrations`, 'cash-coin')}
-            ${kpi('Pending payment', kpis.payments.Pending, `${formatPeso(kpis.outstanding)} outstanding`, 'hourglass-split')}
-            ${kpi('Waived', kpis.payments.Waived, 'No fee due', 'gift')}
-            ${kpi('Refunded', kpis.payments.Refunded, 'Passes invalid', 'arrow-counterclockwise')}
+
         </div>
         <div class="row g-4 mb-4">
-            <div class="col-xxl-7">${card('Session attendance', sessionsTable(report.sessions), 'Turnout is measured against paid or waived registrants.')}</div>
+            <div class="col-xxl-7">${card('Session attendance', sessionsTable(report.sessions), 'Turnout is measured against event registrations.')}</div>
             <div class="col-xxl-5">${card('Arrivals by hour', arrivals(report.arrivals))}</div>
         </div>
         <div class="row g-4 mb-4">

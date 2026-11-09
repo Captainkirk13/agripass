@@ -1,5 +1,5 @@
 import { api } from '../../lib/api.js';
-import { emptyState, esc, formatDate, formatDateRange, formatPeso, formatTime, statusBadge } from '../../lib/ui.js';
+import { emptyState, esc, formatDate, formatDateRange, formatTime, statusBadge } from '../../lib/ui.js';
 import { activeEvent, isAdmin, state } from '../state.js';
 
 export async function renderDashboard() {
@@ -51,7 +51,7 @@ export async function renderDashboard() {
 
 function activeEventPanel(event) {
     const { stats } = event;
-    const cleared = stats.payments.Paid + stats.payments.Waived;
+    const registrations = stats.registrations;
     const turnout = stats.registrations ? Math.round((stats.checked_in / stats.registrations) * 100) : 0;
 
     const kpi = (icon, label, value, sub = '', accent = false) => `
@@ -84,10 +84,8 @@ function activeEventPanel(event) {
             </div>
         </div>
         <div class="row g-3 mb-4">
-            ${kpi('people', 'Registrations', stats.registrations, `${cleared} cleared for entry`)}
+            ${kpi('people', 'Registrations', stats.registrations, 'Registered attendees')}
             ${kpi('qr-code-scan', 'Checked in', stats.checked_in, `${turnout}% turnout`)}
-            ${kpi('hourglass-split', 'Pending payment', stats.payments.Pending, 'Awaiting verification', true)}
-            ${kpi('cash-coin', 'Revenue', formatPeso(stats.revenue), `${stats.payments.Paid} paid registrations`)}
         </div>
         <div class="card mb-4">
             <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Session attendance</h2></div>
@@ -98,13 +96,13 @@ function activeEventPanel(event) {
                     <tbody>
                         ${event.sessions.map((s) => {
                             const count = stats.session_attendance[s.session_id] || 0;
-                            const pct = cleared ? Math.round((count / cleared) * 100) : 0;
+                            const pct = registrations ? Math.round((count / registrations) * 100) : 0;
                             return `<tr>
                                 <td class="fw-semibold">${esc(s.session_name)}</td>
                                 <td class="text-muted small">${formatDate(s.session_date, { weekday: 'short', month: 'short', day: 'numeric' })}, ${formatTime(s.start_time)} – ${formatTime(s.end_time)}</td>
                                 <td><div class="d-flex align-items-center gap-2">
                                     <div class="progress flex-grow-1" style="height:.5rem"><div class="progress-bar" style="width:${pct}%"></div></div>
-                                    <span class="small text-muted text-nowrap">${count} / ${cleared}</span></div></td>
+                                    <span class="small text-muted text-nowrap">${count} / ${registrations}</span></div></td>
                             </tr>`;
                         }).join('')}
                     </tbody>

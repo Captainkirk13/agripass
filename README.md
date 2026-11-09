@@ -35,22 +35,20 @@ password at first sign-in.
 | Role | Can do |
 | :--- | :--- |
 | Super Admin | Everything, including user accounts |
-| Regional Officer | Events, sessions, registration forms, payments |
+| Regional Officer | Events, sessions and registration forms |
 | Gate Staff | QR scanner and read-only dashboard |
 
 Upgrading an existing database: schema files only run when the database is first created, so apply any newer
-`database/schema/*.sql` files by hand (`002_user_accounts.sql` for user management, `003_certificates.sql` for CPD
-certificates, `004_member_portal.sql` for the member portal), for example
+`database/schema/*.sql` files and `database/migrations/*.sql` by hand (`002_user_accounts.sql` for user management, `003_certificates.sql` for CPD certificates, `004_member_portal.sql` for the member portal, and `005_registration_profile_and_signatories.sql` for the latest profile changes), for example
 `docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/schema/003_certificates.sql`.
 
 ## CPD certificates
 
 After an event is marked **Completed**, admins issue certificates from the event's **Certificates** tab:
 
-1. Set the signatory's name and position when editing the event, and optionally upload a signature image (PNG or JPEG)
+1. Set both signatories' names and positions when editing the event, then upload their signature images (PNG or JPEG)
    on the Certificates tab. Use **Preview sample certificate** to check the layout.
-2. An attendee qualifies when their payment is Paid or Waived and they attended at least the event's minimum
-   percentage of sessions.
+2. An attendee qualifies when they attended at least the event's minimum percentage of sessions.
 3. **Issue & email** generates an A4 PDF for every qualifying attendee and emails it to them. Issued certificates can be
    emailed again or revoked (with a reason), but not edited.
 
@@ -61,14 +59,13 @@ The `--demo` seed includes a completed seminar with recorded attendance for tryi
 ## Member portal
 
 Members sign in at `/portal/` without a password: they enter the email they registered with and receive a one-time
-link (valid 30 minutes; in development it lands in Mailpit). The portal lists their registrations with payment status,
-attendance, QR pass links and CPD certificate downloads (or why no certificate was issued). It shows the total CPD
-units earned and lets members update their name, contact number, PRC license, PAA ID and chapter. Email changes go
+link (valid 30 minutes; in development it lands in Mailpit). The portal lists their registrations with attendance and QR pass links and CPD certificate downloads (or why no certificate was issued). It shows the total CPD
+units earned and lets members update their name, nickname, birthdate, contact number, designation, travel details, food allergies and chapter. Email changes go
 through PAA staff. While signed in, the public registration form fills in their details automatically.
 
 ## Member directory
 
-Admins can browse everyone who has registered under **Members**: search by name, email, PRC license or PAA ID,
+Admins can browse everyone who has registered under **Members**: search by name, email or PRC license,
 filter by membership status or chapter, and open a member to see their event history, attendance and certificates.
 Admins can correct a member's details there, including email and PAA membership status. Changing the email cancels
 any unused portal sign-in links. Edits are recorded in the audit log, and certificates that were already issued keep
@@ -76,7 +73,7 @@ the name and license printed on them.
 
 ## Reports and exports
 
-Each event's **Reports** tab (admins only) shows registration, turnout, payment and CPD figures, attendance per
+Each event's **Reports** tab (admins only) shows registration, turnout and CPD figures, attendance per
 session, arrivals per hour, a breakdown by chapter, PRC license and PAA membership, and tallies of the custom
 registration questions. From there you can download:
 
@@ -143,9 +140,7 @@ Scanner endpoints use the `X-Event-ID` header for event context, falling back to
 | POST | `/api/events/{id}/fields` · DELETE `/api/events/{id}/fields/{fieldId}` | admin |
 | POST | `/api/events/{id}/registrations` (requires `privacy_consent: true`) | public |
 | POST | `/api/events/{id}/registrations/resend` | public, rate limited |
-| POST | `/api/members/lookup` (email + PRC license or PAA ID) | public, rate limited |
 | GET | `/api/events/{id}/registrations` | staff |
-| PUT | `/api/registrations/{id}/payment` | admin |
 | GET | `/api/passes?token=...` | public, signed token only |
 | GET | `/api/passes/qr?token=...` (SVG, or `&format=png`) | public, signed token only |
 | POST | `/api/checkin` (optional `client_uuid` makes retries idempotent) | staff |
