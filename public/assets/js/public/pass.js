@@ -30,7 +30,7 @@ const certificateBanner = (certificate) => `
     <div class="card mx-auto mb-4 no-print border-success" style="max-width:420px"><div class="card-body d-flex gap-3 align-items-center">
         <i class="bi bi-award-fill fs-1 text-success"></i>
         <div class="flex-grow-1">
-            <div class="fw-semibold">Your CPD certificate is ready</div>
+            <div class="fw-semibold">Your attendance certificate is ready</div>
             <div class="small text-muted">No. ${esc(certificate.certificate_no)} &middot; issued ${formatDate(certificate.issued_at)}</div>
             <a class="btn btn-success btn-sm mt-2" href="/api/certificates/download?token=${encodeURIComponent(token)}">
                 <i class="bi bi-download me-1"></i>Download certificate (PDF)</a>

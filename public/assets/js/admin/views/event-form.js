@@ -66,16 +66,12 @@ export async function renderEventForm(eventId = null) {
 
                 <div class="col-lg-4">
                     <div class="card mb-4">
-                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">CPD &amp; PRC compliance</h2></div>
+                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate &amp; PRC details</h2></div>
                         <div class="card-body row g-3">
                             <div class="col-12">
-                                <label class="form-label" for="cpd_units">CPD units</label>
-                                <input class="form-control" type="number" min="0" step="0.25" id="cpd_units" name="cpd_units" value="${v('cpd_units', '0')}">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="cpd_min_attendance_pct">Minimum attendance for certificate</label>
+                                <label class="form-label" for="certificate_min_attendance_pct">Minimum attendance for certificate</label>
                                 <div class="input-group">
-                                    <input class="form-control" type="number" min="0" max="100" id="cpd_min_attendance_pct" name="cpd_min_attendance_pct" value="${v('cpd_min_attendance_pct', '80')}">
+                                    <input class="form-control" type="number" min="0" max="100" id="certificate_min_attendance_pct" name="certificate_min_attendance_pct" value="${v('certificate_min_attendance_pct', '80')}">
                                     <span class="input-group-text">% of sessions</span>
                                 </div>
                             </div>
@@ -102,7 +98,7 @@ export async function renderEventForm(eventId = null) {
                                 <input class="form-control" id="cert_signatory_2_name" name="cert_signatory_2_name" value="${v('cert_signatory_2_name')}" maxlength="100"></div>
                             <div class="col-12"><label class="form-label" for="cert_signatory_2_title">Second signatory position</label>
                                 <input class="form-control" id="cert_signatory_2_title" name="cert_signatory_2_title" value="${v('cert_signatory_2_title')}" maxlength="150"></div>
-                            <div class="col-12 form-text mt-2">Printed on CPD certificates. Upload the two signature images from the event's Certificates tab.</div>
+                            <div class="col-12 form-text mt-2">Printed on attendance certificates. Upload the two signature images from the event's Certificates tab.</div>
                         </div>
                     </div>
                 </div>

@@ -14,14 +14,14 @@ export async function renderReports(el, event) {
                     <div class="small text-muted">Figures as of ${formatDateTime(report.generated_at)}. Use Excel for PRC submissions, since it keeps leading zeros in license numbers.</div>
                 </div>
                 <a class="btn btn-sm btn-primary" href="${base}/report.pdf" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-1"></i>Summary PDF</a>
-                ${exportGroup('Attendance &amp; CPD', `${base}/exports/attendance`)}
+                ${exportGroup('Attendance &amp; Certificates', `${base}/exports/attendance`)}
                 ${exportGroup('Check-in log', `${base}/exports/checkins`)}
             </div>
         </div>
         <div class="row g-3 mb-4">
             ${kpi('Registered', kpis.registered, `${kpis.registered} registered`, 'people')}
             ${kpi('Attended', kpis.attended, `${kpis.turnout_pct}% turnout`, 'person-check')}
-            ${kpi('CPD eligible', kpis.cpd_eligible, `${kpis.certificates_issued} certificates issued`, 'patch-check')}
+            ${kpi('Certificate eligible', kpis.certificate_eligible, `${kpis.certificates_issued} certificates issued`, 'patch-check')}
             ${kpi('Check-ins', kpis.total_scans, `${kpis.offline_scans} synced from offline`, 'qr-code-scan')}
 
         </div>

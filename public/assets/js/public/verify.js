@@ -33,7 +33,7 @@ function details(c) {
             <div class="card-header py-3 ${valid ? 'text-bg-success' : 'text-bg-danger'}">
                 <i class="bi ${valid ? 'bi-patch-check-fill' : 'bi-x-octagon-fill'} me-1"></i>
                 <strong>${valid ? 'Valid certificate' : 'This certificate has been revoked'}</strong>
-                ${valid ? '' : `<div class="small">Revoked ${formatDate(c.revoked_at)}. It should not be accepted for CPD credit.</div>`}
+                ${valid ? '' : `<div class="small">Revoked ${formatDate(c.revoked_at)}. It should not be accepted for certificate acceptance.</div>`}
             </div>
             <div class="card-body">
                 <dl class="row mb-0 small">
@@ -43,7 +43,6 @@ function details(c) {
                     ${row('Venue', esc(c.event_venue))}
                     ${row('Dates', formatDateRange(c.event_start_date, c.event_end_date))}
                     ${row('Sessions attended', `${c.sessions_attended} of ${c.sessions_total}`)}
-                    ${row('CPD units', esc(Number(c.cpd_units)))}
                     ${row('PRC accreditation no.', esc(c.prc_accreditation_no))}
                     ${row('Certificate no.', esc(c.certificate_no))}
                     ${row('Issued', formatDate(c.issued_at))}

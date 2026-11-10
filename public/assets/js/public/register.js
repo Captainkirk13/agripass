@@ -44,7 +44,6 @@ function hero(event) {
             ${event.description ? `<p class="mb-4" style="white-space:pre-line">${esc(event.description)}</p>` : ''}
             <div class="row g-2">
                 ${fact('Scheduled attendance', formatDuration(scheduledHours(event.sessions)))}
-                ${fact('CPD units', Number(event.cpd_units) > 0 ? esc(Number(event.cpd_units)) : '—')}
                 ${fact('Sessions', event.sessions.length || '—')}
                 ${fact('PRC accreditation', esc(event.prc_accreditation_no) || '—')}
             </div>
@@ -64,8 +63,8 @@ function schedule(event) {
                         &middot; ${formatTime(s.start_time)} – ${formatTime(s.end_time)}</div>
                 </div></div>`).join('')}
             </div>
-            ${Number(event.cpd_units) > 0 ? `<p class="small text-muted mt-3 mb-0"><i class="bi bi-award me-1"></i>
-                Attend at least ${esc(event.cpd_min_attendance_pct)}% of sessions to receive your CPD Certificate of Attendance.</p>` : ''}
+            ${Number(event.certificate_min_attendance_pct) > 0 ? `<p class="small text-muted mt-3 mb-0"><i class="bi bi-award me-1"></i>
+                Attend at least ${esc(event.certificate_min_attendance_pct)}% of sessions to receive your Certificate of Attendance.</p>` : ''}
         </div></div>`;
 }
 
@@ -118,7 +117,7 @@ function renderForm(event) {
                 ${event.custom_fields.length ? `<div class="section-title"><i class="bi bi-ui-checks"></i>Event questions</div><div class="row g-3 mb-4">${event.custom_fields.map(customFieldInput).join('')}</div>` : ''}
                 <div class="form-check mb-4">
                     <input class="form-check-input" type="checkbox" id="privacy_consent" name="privacy_consent" required>
-                    <label class="form-check-label small" for="privacy_consent">I consent to the Philippine Association of Agriculturists, Inc. collecting and processing my personal information for event registration, attendance, and CPD reporting to the PRC, in accordance with the Data Privacy Act of 2012 (RA 10173). <span class="text-danger">*</span></label>
+                    <label class="form-check-label small" for="privacy_consent">I consent to the Philippine Association of Agriculturists, Inc. collecting and processing my personal information for event registration, attendance reporting to the PRC, in accordance with the Data Privacy Act of 2012 (RA 10173). <span class="text-danger">*</span></label>
                 </div>
                 <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-qr-code me-2"></i>Register &amp; get my QR pass</button>
             </form>

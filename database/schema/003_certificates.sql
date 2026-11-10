@@ -1,7 +1,7 @@
--- CPD certificates. Applied automatically on a fresh database;
+-- Attendance certificates. Applied automatically on a fresh database;
 -- for an existing one run: docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/schema/003_certificates.sql
 
--- Name, units and attendance are snapshotted at issuance so later profile or event edits
+-- Name and attendance are snapshotted at issuance so later profile or event edits
 -- never change a certificate that has already been handed out.
 CREATE TABLE certificates (
     certificate_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -10,7 +10,6 @@ CREATE TABLE certificates (
     verification_code CHAR(16) NOT NULL,
     attendee_name VARCHAR(120) NOT NULL,
     prc_license_number VARCHAR(50) NULL,
-    cpd_units DECIMAL(4,2) NOT NULL,
     sessions_attended SMALLINT UNSIGNED NOT NULL,
     sessions_total SMALLINT UNSIGNED NOT NULL,
     issued_by INT NULL,

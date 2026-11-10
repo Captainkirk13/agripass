@@ -15,7 +15,7 @@ use AgriPass\Services\EventReport;
 use AgriPass\Services\ReportPdf;
 use AgriPass\Services\TableExport;
 
-/** Event analytics and data exports for PRC CPD compliance. Admins only, since exports contain personal data. */
+/** Event analytics and data exports. Admins only, since exports contain personal data. */
 final class ReportController
 {
     public static function show(Request $request): void
@@ -69,7 +69,7 @@ final class ReportController
         self::exportMembers($request, TableExport::XLSX);
     }
 
-    /** One row per registrant with per-session check-in times and CPD outcome: the file for PRC CPD submissions. */
+    /** One row per registrant with per-session check-in times and certificate eligibility: the attendance export. */
     private static function exportAttendance(Request $request, string $format): void
     {
         $user = Auth::require(Auth::ADMINS);
@@ -98,21 +98,21 @@ final class ReportController
         foreach ($sessions as $s) {
             $header[] = "Check-in: {$s['session_name']}";
         }
-        array_push($header, 'Sessions attended', 'Sessions total', 'Attendance %', 'CPD eligible', 'Not eligible because', 'Certificate no.', 'CPD units credited');
+        array_push($header, 'Sessions attended', 'Sessions total', 'Attendance %', 'Certificate eligible', 'Not eligible because', 'Certificate no.');
         foreach ($fields as $f) {
             $header[] = $f['field_label'];
         }
 
         $rows = array_map(static function (array $r) use ($sessions, $fields, $eligibility, $checkins, $event): array {
-            $cpd = $eligibility[(int) $r['registration_id']];
+            $certificate = $eligibility[(int) $r['registration_id']];
             $answers = json_decode((string) $r['custom_responses'], true) ?: [];
-            $hasCertificate = $cpd['certificate_id'] !== null && $cpd['revoked_at'] === null;
+            $hasCertificate = $certificate['certificate_id'] !== null && $certificate['revoked_at'] === null;
             $line = [$r['last_name'], $r['first_name'], $r['email'], $r['contact_number'], $r['designation'], $r['nickname'], $r['birthdate'], $r['flight_arrival'], $r['flight_departure'], $r['food_allergies'], $r['prc_license_number'], $r['chapter_region'], $r['membership_status'], $r['registration_date']];
             foreach ($sessions as $s) {
                 $line[] = $checkins[$r['registration_id']][$s['session_id']] ?? '';
             }
-            array_push($line, $cpd['sessions_attended'], $cpd['sessions_total'], $cpd['attendance_pct'], $cpd['eligible'] ? 'Yes' : 'No',
-                $cpd['reason'], $hasCertificate ? $cpd['certificate_no'] : '', $hasCertificate ? $event['cpd_units'] : '');
+            array_push($line, $certificate['sessions_attended'], $certificate['sessions_total'], $certificate['attendance_pct'], $certificate['eligible'] ? 'Yes' : 'No',
+                $certificate['reason'], $hasCertificate ? $certificate['certificate_no'] : '');
             foreach ($fields as $f) {
                 $value = $answers[(string) $f['field_id']] ?? '';
                 $line[] = is_bool($value) ? ($value ? 'Yes' : 'No') : $value;
@@ -154,15 +154,13 @@ final class ReportController
         $rows = Database::all(
             'SELECT m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.prc_license_number, m.chapter_region,
                     m.membership_status, m.created_at,
-                    (SELECT COUNT(*) FROM registrations r WHERE r.member_id = m.member_id) AS events,
-                    (SELECT COALESCE(SUM(c.cpd_units), 0) FROM certificates c JOIN registrations r ON r.registration_id = c.registration_id
-                     WHERE r.member_id = m.member_id AND c.revoked_at IS NULL) AS cpd_units
+                    (SELECT COUNT(*) FROM registrations r WHERE r.member_id = m.member_id) AS events
              FROM members m ORDER BY m.last_name, m.first_name',
         );
 
         TableExport::send($format, 'agripass-members-' . date('Y-m-d'), 'Members',
             ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'PRC license no.', 'Chapter / region', 'PAA membership',
-             'First registered', 'Events registered', 'CPD units earned'],
+             'First registered', 'Events registered'],
             array_map('array_values', $rows));
         AuditLog::record($user['user_id'], 'report.export', 'member', null, ['format' => "members.{$format}", 'rows' => count($rows)]);
     }

@@ -24,7 +24,7 @@ final class HelpGuide
         'helping-attendees' => ['Helping attendees', 'person-raised-hand', 'Lost passes, walk-ins and My AgriPass.', self::STAFF],
         'events' => ['Setting up an event', 'calendar-event', 'Creating events, sessions and registration questions.', self::ADMIN],
         'registrations' => ['Registrations', 'people', 'Review and export registrants.', self::ADMIN],
-        'certificates' => ['CPD certificates', 'award', 'Eligibility, issuing, revoking and verification.', self::ADMIN],
+        'certificates' => ['Attendance certificates', 'award', 'Eligibility, issuing, revoking and verification.', self::ADMIN],
         'reports' => ['Reports and exports', 'bar-chart', 'Event figures, the summary PDF and PRC exports.', self::ADMIN],
         'members' => ['Members', 'person-vcard', 'Finding members and correcting their details.', self::ADMIN],
         'users' => ['Staff accounts', 'people', 'Adding staff, resetting passwords and roles (Super Admin).', self::ADMIN],

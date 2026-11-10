@@ -34,7 +34,7 @@ final class PortalMailer
                   <div style="padding:24px;background:#ffffff">
                     <p>Hi {$e($member['first_name'])},</p>
                     <p>Use the button below to sign in to My AgriPass, where you can see your event registrations,
-                       open your QR passes, download CPD certificates and update your profile.</p>
+                       open your QR passes, download attendance certificates and update your profile.</p>
                     <p><a href="{$e($url)}" style="display:inline-block;background:#1c5739;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Sign in to My AgriPass</a></p>
                     <p style="font-size:12px;color:#777">This link works once and expires in {$minutes} minutes.
                        If you didn't ask to sign in, you can ignore this email.</p>

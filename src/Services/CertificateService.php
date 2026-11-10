@@ -16,7 +16,7 @@ final class CertificateService
     public static function eligibility(array $event): array
     {
         $total = (int) Database::one('SELECT COUNT(*) AS total FROM event_sessions WHERE event_id = ?', [$event['event_id']])['total'];
-        $minPct = (int) $event['cpd_min_attendance_pct'];
+        $minPct = (int) $event['certificate_min_attendance_pct'];
 
         $rows = Database::all(
             "SELECT r.registration_id, r.qr_token,
@@ -74,12 +74,12 @@ final class CertificateService
         try {
             $id = Database::insert(
                 'INSERT INTO certificates (registration_id, certificate_no, verification_code, attendee_name, prc_license_number,
-                                           cpd_units, sessions_attended, sessions_total, issued_by)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                           sessions_attended, sessions_total, issued_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     $row['registration_id'], $number, strtoupper(bin2hex(random_bytes(8))),
                     trim("{$row['first_name']} {$row['last_name']}"), $row['prc_license_number'],
-                    $event['cpd_units'], $row['sessions_attended'], $row['sessions_total'], $issuedBy,
+                    $row['sessions_attended'], $row['sessions_total'], $issuedBy,
                 ],
             );
         } catch (PDOException $e) {

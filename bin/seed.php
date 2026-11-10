@@ -39,11 +39,11 @@ if (Database::one("SELECT 1 FROM events WHERE title = 'PAA National Convention 2
 }
 
 $eventId = Database::insert(
-    "INSERT INTO events (title, event_type, description, venue, start_date, end_date, cpd_units,
+    "INSERT INTO events (title, event_type, description, venue, start_date, end_date,
                          prc_accreditation_no, status, is_active, created_by)
      VALUES ('PAA National Convention 2026', 'Convention', 'Annual national convention of agriculturists.',
              'Central Luzon State University, Science City of Muñoz, Nueva Ecija', '2026-11-18', '2026-11-19',
-             12.00, 'PRC-AIPO-2026-0001', 'Active', 1, ?)",
+             'PRC-AIPO-2026-0001', 'Active', 1, ?)",
     [$adminId],
 );
 Database::run('UPDATE events SET is_active = 0 WHERE event_id <> ?', [$eventId]);
@@ -70,7 +70,7 @@ Database::run(
 
 echo "Created demo event #{$eventId} with " . count($sessions) . " sessions\n";
 
-/** A finished event with recorded attendance, for trying out CPD certificates. */
+/** A finished event with recorded attendance, for trying out attendance certificates. */
 function seedCompletedSeminar(int $adminId): void
 {
     $title = 'PAA Luzon Agri-Innovation Seminar 2026';
@@ -80,12 +80,12 @@ function seedCompletedSeminar(int $adminId): void
     }
 
     $eventId = Database::insert(
-        "INSERT INTO events (title, event_type, description, venue, start_date, end_date, cpd_units,
-                             cpd_min_attendance_pct, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, status, created_by)
+        "INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct,
+                             prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, status, created_by)
          VALUES (?, 'Seminar', 'Two-day seminar on climate-smart farming and agri-technology.',
-                 'University of the Philippines Los Baños, Laguna', '2026-09-15', '2026-09-16', 8.00, 75,
+                 'University of the Philippines Los Baños, Laguna', '2026-09-15', '2026-09-16', 75,
                  'PRC-AIPO-2026-0412', 'Dr. Ramon C. Bautista', 'National President, Philippine Association of Agriculturists, Inc.',
-                 'Dr. Elena P. Santos', 'CPD Committee Chair', 'Completed', ?)",
+                 'Dr. Elena P. Santos', 'Certificate Committee Chair', 'Completed', ?)",
         [$title, $adminId],
     );
 
