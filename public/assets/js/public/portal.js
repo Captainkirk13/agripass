@@ -49,7 +49,7 @@ function renderSignIn(error = '') {
             <div class="text-center mb-4">
                 <i class="bi bi-person-circle fs-1 text-success"></i>
                 <h1 class="h4 fw-bold mt-2 mb-1" style="color:var(--paa-green-dark)">Sign in to My AgriPass</h1>
-                <p class="text-muted small mb-0">See your event registrations, open your QR passes and download CPD certificates.</p>
+                <p class="text-muted small mb-0">See your event registrations, open your QR passes and download attendance certificates.</p>
             </div>
             ${error ? `<div class="alert alert-warning small">${esc(error)}</div>` : ''}
             <form id="link-form" novalidate>
@@ -99,7 +99,7 @@ function renderLinkSent(email, message) {
 async function renderDashboard(member) {
     signOut.classList.remove('d-none');
     document.title = `${member.first_name} ${member.last_name} · My AgriPass`;
-    const [{ registrations, cpd_units_earned: cpdEarned }, openEvent] = await Promise.all([
+    const [{ registrations }, openEvent] = await Promise.all([
         api('/portal/registrations'),
         api('/active-event').then((r) => r.event).catch(() => null),
     ]);
@@ -115,7 +115,6 @@ async function renderDashboard(member) {
             <div class="d-flex gap-3">
                 ${summaryStat(registrations.length, registrations.length === 1 ? 'Event' : 'Events')}
                 ${summaryStat(certificates, certificates === 1 ? 'Certificate' : 'Certificates')}
-                ${summaryStat(Number(cpdEarned), 'CPD units earned')}
             </div>
         </div>
         ${openEvent && !registeredForOpen ? `
@@ -167,15 +166,14 @@ function registrationCard(r) {
             </div>
             <div class="d-flex flex-wrap gap-4 small my-3">
                 ${r.sessions_total ? `<div><div class="text-muted">Sessions attended</div><strong>${r.sessions_attended} of ${r.sessions_total}</strong></div>` : ''}
-                ${Number(event.cpd_units) > 0 ? `<div><div class="text-muted">CPD units</div><strong>${esc(Number(event.cpd_units))}</strong>
-                    <span class="text-muted">(${event.cpd_min_attendance_pct}% attendance)</span></div>` : ''}
+                ${Number(event.certificate_min_attendance_pct) > 0 ? `<div><div class="text-muted">Certificate requirement</div><strong>${esc(event.certificate_min_attendance_pct)}% attendance</strong></div>` : ''}
                 <div><div class="text-muted">Total scheduled attendance</div><strong>${formatDuration(event.scheduled_hours ?? scheduledHours(event.sessions || []))}</strong></div>
                 <div><div class="text-muted">Registered</div>${formatDate(r.registration_date)}</div>
             </div>
             ${r.certificate_note ? `<div class="alert alert-light border small py-2 mb-3"><i class="bi bi-info-circle me-1"></i>${esc(r.certificate_note)}</div>` : ''}
             <div class="d-flex flex-wrap gap-2">
                 ${r.certificate ? `<a class="btn btn-success btn-sm" href="/api/certificates/download?token=${encodeURIComponent(r.qr_token)}">
-                    <i class="bi bi-award me-1"></i>Download CPD certificate</a>` : ''}
+                    <i class="bi bi-award me-1"></i>Download attendance certificate</a>` : ''}
                 <a class="btn ${ended ? 'btn-outline-primary' : 'btn-primary'} btn-sm" href="${passPageUrl(r.qr_token)}">
                     <i class="bi bi-qr-code me-1"></i>${ended ? 'View pass' : 'Open my QR pass'}</a>
             </div>

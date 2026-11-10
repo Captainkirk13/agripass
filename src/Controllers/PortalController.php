@@ -100,12 +100,12 @@ final class PortalController
         $rows = Database::all(
             "SELECT r.registration_id, r.registration_date, r.qr_token,
                     e.event_id, e.title, e.event_type, e.venue, e.start_date, e.end_date, e.status AS event_status,
-                    e.cpd_units, e.cpd_min_attendance_pct,
+                    e.certificate_min_attendance_pct,
                     (SELECT COUNT(*) FROM event_sessions s WHERE s.event_id = e.event_id) AS sessions_total,
                     (SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time)), 0) / 60 FROM event_sessions s WHERE s.event_id = e.event_id) AS scheduled_hours,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = e.event_id) AS sessions_attended,
-                    c.certificate_no, c.verification_code, c.issued_at, c.cpd_units AS certificate_cpd_units, c.revoked_at
+                    c.certificate_no, c.verification_code, c.issued_at, c.revoked_at
              FROM registrations r
              JOIN events e ON e.event_id = r.event_id
              LEFT JOIN certificates c ON c.registration_id = r.registration_id
@@ -132,37 +132,34 @@ final class PortalController
                     'start_date' => $r['start_date'],
                     'end_date' => $r['end_date'],
                     'status' => $r['event_status'],
-                    'cpd_units' => $r['cpd_units'],
-                    'cpd_min_attendance_pct' => (int) $r['cpd_min_attendance_pct'],
+                    'certificate_min_attendance_pct' => (int) $r['certificate_min_attendance_pct'],
                     'scheduled_hours' => (float) $r['scheduled_hours'],
                 ],
                 'certificate' => $hasCertificate ? [
                     'certificate_no' => $r['certificate_no'],
                     'verification_code' => $r['verification_code'],
                     'issued_at' => $r['issued_at'],
-                    'cpd_units' => $r['certificate_cpd_units'],
                 ] : null,
-                'certificate_note' => $ended && !$hasCertificate && (float) $r['cpd_units'] > 0 ? self::certificateNote($r) : null,
+                'certificate_note' => $ended && !$hasCertificate ? self::certificateNote($r) : null,
             ];
         }, $rows);
 
         Response::json([
             'registrations' => $registrations,
-            'cpd_units_earned' => array_sum(array_map(static fn ($r) => (float) ($r['certificate']['cpd_units'] ?? 0), $registrations)),
         ]);
     }
 
     private static function certificateNote(array $r): string
     {
         if ($r['revoked_at'] !== null) {
-            return 'Your CPD certificate for this event was revoked. Contact PAA for details.';
+            return 'Your attendance certificate for this event was revoked. Contact PAA for details.';
         }
         $reason = CertificateService::ineligibleReason(
-            (int) $r['sessions_attended'], (int) $r['sessions_total'], (int) $r['cpd_min_attendance_pct'],
+            (int) $r['sessions_attended'], (int) $r['sessions_total'], (int) $r['certificate_min_attendance_pct'],
         );
 
         return $reason === null
-            ? 'You qualify for a CPD certificate. PAA will email it to you once it is issued.'
-            : "No CPD certificate: {$reason}";
+            ? 'You qualify for an attendance certificate. PAA will email it to you once it is issued.'
+            : "No attendance certificate: {$reason}";
     }
 }

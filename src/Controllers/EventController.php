@@ -30,8 +30,7 @@ final class EventController
         'start_date' => 'required',
         'end_date' => 'required',
         'description' => 'optional',
-        'cpd_units' => 'optional',
-        'cpd_min_attendance_pct' => 'optional',
+        'certificate_min_attendance_pct' => 'optional',
         'prc_accreditation_no' => 'optional',
         'cert_signatory_name' => 'optional',
         'cert_signatory_title' => 'optional',
@@ -75,8 +74,8 @@ final class EventController
         $user = Auth::require(Auth::ADMINS);
         $data = self::validated($request);
         $id = Database::insert(
-            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, cpd_units, cpd_min_attendance_pct, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [...self::columns($data), $user['user_id']],
         );
         AuditLog::record($user['user_id'], 'event.create', 'event', $id);
@@ -91,7 +90,7 @@ final class EventController
         $data = self::validated($request);
         Database::run(
             'UPDATE events SET title = ?, event_type = ?, description = ?, venue = ?, start_date = ?, end_date = ?,
-                               cpd_units = ?, cpd_min_attendance_pct = ?, prc_accreditation_no = ?,
+                               certificate_min_attendance_pct = ?, prc_accreditation_no = ?,
                                cert_signatory_name = ?, cert_signatory_title = ?, cert_signatory_2_name = ?, cert_signatory_2_title = ?
              WHERE event_id = ?',
             [...self::columns($data), $event['event_id']],
@@ -199,19 +198,14 @@ final class EventController
         if (!$errors && $data['end_date'] < $data['start_date']) {
             $errors['end_date'] = 'End date cannot be before the start date.';
         }
-        foreach (['cpd_units'] as $field) {
-            if ($data[$field] !== null && (!is_numeric($data[$field]) || $data[$field] < 0)) {
-                $errors[$field] = 'Must be a non-negative number.';
-            }
-        }
         foreach (['cert_signatory_name' => 100, 'cert_signatory_title' => 150, 'cert_signatory_2_name' => 100, 'cert_signatory_2_title' => 150] as $field => $max) {
             if ($data[$field] !== null && mb_strlen((string) $data[$field]) > $max) {
                 $errors[$field] = "Use {$max} characters or fewer.";
             }
         }
-        $pct = $data['cpd_min_attendance_pct'];
+        $pct = $data['certificate_min_attendance_pct'];
         if ($pct !== null && (!is_numeric($pct) || $pct < 0 || $pct > 100)) {
-            $errors['cpd_min_attendance_pct'] = 'Must be between 0 and 100.';
+            $errors['certificate_min_attendance_pct'] = 'Must be between 0 and 100.';
         }
         if ($errors) {
             throw new HttpException(422, 'Validation failed.', $errors);
@@ -229,8 +223,7 @@ final class EventController
             $data['venue'],
             $data['start_date'],
             $data['end_date'],
-            $data['cpd_units'] ?? 0,
-            $data['cpd_min_attendance_pct'] ?? 80,
+            $data['certificate_min_attendance_pct'] ?? 80,
             $data['prc_accreditation_no'],
             $data['cert_signatory_name'],
             $data['cert_signatory_title'],

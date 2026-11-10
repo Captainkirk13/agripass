@@ -14,8 +14,6 @@ final class CertificateMailer
         $e = static fn (?string $v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
         $passUrl = PassMailer::passUrl($certificate['qr_token']);
         $verifyUrl = CertificateService::verifyUrl($certificate['verification_code']);
-        $units = (float) $certificate['cpd_units'];
-        $unitsLine = $units > 0 ? ' and earned ' . rtrim(rtrim(number_format($units, 2), '0'), '.') . ' CPD unit' . ($units == 1.0 ? '' : 's') : '';
 
         try {
             $mail = Mailer::create();
@@ -32,7 +30,7 @@ final class CertificateMailer
                   <div style="padding:24px;background:#ffffff">
                     <p>Hi {$e($certificate['first_name'])},</p>
                     <p>Thank you for attending <strong>{$e($event['title'])}</strong>. You completed
-                       {$e((string) $certificate['sessions_attended'])} of {$e((string) $certificate['sessions_total'])} sessions{$e($unitsLine)}.</p>
+                       {$e((string) $certificate['sessions_attended'])} of {$e((string) $certificate['sessions_total'])} sessions.</p>
                     <p>Your Certificate of Attendance is attached as a PDF. You can also download it any time from your pass page.</p>
                     <p><a href="{$e($passUrl)}" style="display:inline-block;background:#1c5739;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Open my pass page</a></p>
                     <p style="font-size:12px;color:#777">Certificate No. {$e($certificate['certificate_no'])}.

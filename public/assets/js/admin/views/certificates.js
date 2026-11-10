@@ -27,8 +27,7 @@ export async function renderCertificates(el, event, reload) {
                     </div>
                     <div class="card-body">
                         <dl class="row mb-0 small">
-                            ${row('CPD units', esc(Number(settings.cpd_units)))}
-                            ${row('Requirement', `At least ${settings.cpd_min_attendance_pct}% of ${event.sessions.length} session(s) attended`)}
+                            ${row('Requirement', `At least ${settings.certificate_min_attendance_pct}% of ${event.sessions.length} session(s) attended`)}
                             ${row('PRC accreditation no.', esc(settings.prc_accreditation_no))}
                             ${row('Signatory 1', settings.signatory_name ? `${esc(settings.signatory_name)}<div class="text-muted">${esc(settings.signatory_title)}</div>` : '<span class="text-danger">Not set</span>')}
                             ${row('Signatory 2', settings.signatory_2_name ? `${esc(settings.signatory_2_name)}<div class="text-muted">${esc(settings.signatory_2_title)}</div>` : '<span class="text-danger">Not set</span>')}

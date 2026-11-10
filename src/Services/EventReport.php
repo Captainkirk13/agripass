@@ -59,7 +59,7 @@ final class EventReport
             'registered' => $registered,
             'attended' => $attended,
             'turnout_pct' => self::pct($attended, $registered),
-            'cpd_eligible' => count(array_filter($eligibility, static fn ($r) => $r['eligible'])),
+            'certificate_eligible' => count(array_filter($eligibility, static fn ($r) => $r['eligible'])),
             'certificates_issued' => count(array_filter($eligibility, static fn ($r) => $r['certificate_id'] !== null && $r['revoked_at'] === null)),
             'total_scans' => $scans,
             'offline_scans' => array_sum(array_map(static fn ($s) => (int) $s['offline'], $sessions)),

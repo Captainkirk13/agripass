@@ -39,10 +39,10 @@ password at first sign-in.
 | Gate Staff | QR scanner and read-only dashboard |
 
 Upgrading an existing database: schema files only run when the database is first created, so apply any newer
-`database/schema/*.sql` files and `database/migrations/*.sql` by hand (`002_user_accounts.sql` for user management, `003_certificates.sql` for CPD certificates, `004_member_portal.sql` for the member portal, and `005_registration_profile_and_signatories.sql` for the latest profile changes), for example
-`docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/schema/003_certificates.sql`.
+`database/schema/*.sql` files and `database/migrations/*.sql` by hand (`005_registration_profile_and_signatories.sql` for profile fields and `006_remove_certificate_unit_fields.sql` for the latest certificate change), for example
+`docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/migrations/006_remove_certificate_unit_fields.sql`.
 
-## CPD certificates
+## Attendance certificates
 
 After an event is marked **Completed**, admins issue certificates from the event's **Certificates** tab:
 
@@ -59,8 +59,7 @@ The `--demo` seed includes a completed seminar with recorded attendance for tryi
 ## Member portal
 
 Members sign in at `/portal/` without a password: they enter the email they registered with and receive a one-time
-link (valid 30 minutes; in development it lands in Mailpit). The portal lists their registrations with attendance and QR pass links and CPD certificate downloads (or why no certificate was issued). It shows the total CPD
-units earned and lets members update their name, nickname, birthdate, contact number, designation, travel details, food allergies and chapter. Email changes go
+link (valid 30 minutes; in development it lands in Mailpit). The portal lists registrations, attendance, QR pass links and attendance certificates (or why no certificate was issued). and lets members update their name, nickname, birthdate, contact number, designation, travel details, food allergies and chapter. Email changes go
 through PAA staff. While signed in, the public registration form fills in their details automatically.
 
 ## Member directory
@@ -73,13 +72,13 @@ the name and license printed on them.
 
 ## Reports and exports
 
-Each event's **Reports** tab (admins only) shows registration, turnout and CPD figures, attendance per
+Each event's **Reports** tab (admins only) shows registration, turnout and certificate figures, attendance per
 session, arrivals per hour, a breakdown by chapter, PRC license and PAA membership, and tallies of the custom
 registration questions. From there you can download:
 
 - **Summary PDF**: the same figures as a printable A4 executive summary.
-- **Attendance & CPD**: one row per registrant with check-in times per session, CPD eligibility (and why not),
-  certificate number and units credited, plus their registration answers. This is the file for PRC CPD submissions.
+- **Attendance & Certificates**: one row per registrant with check-in times per session, certificate eligibility (and why not),
+  certificate number, plus their registration answers. This is the file for attendance records.
 - **Check-in log**: every scan with who recorded it and whether it was synced from offline.
 
 The **Members** page also exports the whole directory. Every export comes as Excel or CSV. Use Excel for PRC

@@ -59,11 +59,11 @@ final class MemberController
         $member = self::find($request->param('id'));
         $registrations = Database::all(
             "SELECT r.registration_id, r.registration_date,
-                    e.event_id, e.title, e.start_date, e.end_date, e.status AS event_status, e.cpd_units,
+                    e.event_id, e.title, e.start_date, e.end_date, e.status AS event_status,
                     (SELECT COUNT(*) FROM event_sessions s WHERE s.event_id = e.event_id) AS sessions_total,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = e.event_id) AS sessions_attended,
-                    c.certificate_id, c.certificate_no, c.cpd_units AS certificate_cpd_units, c.issued_at, c.revoked_at
+                    c.certificate_id, c.certificate_no, c.issued_at, c.revoked_at
              FROM registrations r
              JOIN events e ON e.event_id = r.event_id
              LEFT JOIN certificates c ON c.registration_id = r.registration_id
@@ -71,12 +71,7 @@ final class MemberController
              ORDER BY e.start_date DESC, e.event_id DESC",
             [$member['member_id']],
         );
-        $cpdEarned = array_sum(array_map(
-            static fn ($r) => $r['certificate_id'] !== null && $r['revoked_at'] === null ? (float) $r['certificate_cpd_units'] : 0,
-            $registrations,
-        ));
-
-        Response::json(['member' => $member, 'registrations' => $registrations, 'cpd_units_earned' => $cpdEarned]);
+        Response::json(['member' => $member, 'registrations' => $registrations]);
     }
 
     /** Changing the email cancels unused portal sign-in links, which were sent to the old address. */

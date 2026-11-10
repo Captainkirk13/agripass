@@ -48,10 +48,6 @@ final class CertificatePdf
         $signatureFile2 = self::signatureFile($event['cert_signature_2_path'] ?? null);
         $signature2 = $signatureFile2 ? '<img class="sig-img" src="' . $dataUri((string) file_get_contents($signatureFile2)) . '">' : '<div class="sig-space"></div>';
 
-        $units = (float) $c['cpd_units'];
-        $unitsText = $units > 0
-            ? ', and is hereby credited with <span class="units">' . $e(rtrim(rtrim(number_format($units, 2), '0'), '.')) . ' CPD unit' . ($units == 1.0 ? '' : 's') . '</span>'
-            : '';
         $license = $c['prc_license_number'] ? '<div class="license">PRC License No. ' . $e($c['prc_license_number']) . '</div>' : '';
         $accreditation = $event['prc_accreditation_no'] ? 'PRC Accreditation No. <strong>' . $e($event['prc_accreditation_no']) . '</strong><br>' : '';
         $issued = (new \DateTimeImmutable($c['issued_at'] ?? 'now'))->format('F j, Y');
@@ -77,7 +73,6 @@ final class CertificatePdf
                 .license { margin-top: 1.5mm; font-size: 9.5pt; color: #4a5a50; }
                 .body { margin: 4.5mm auto 0; width: 200mm; font-size: 11.5pt; line-height: 1.55; }
                 .event { font-weight: bold; color: #123b26; }
-                .units { font-weight: bold; color: #1c5739; font-size: 13pt; }
                 .footer { position: absolute; left: 28mm; right: 28mm; bottom: 21mm; }
                 .footer table { width: 100%; border-collapse: collapse; }
                 .footer td { vertical-align: bottom; }
@@ -105,7 +100,7 @@ final class CertificatePdf
                     <div class="body">
                         has attended <span class="event">{$e($event['title'])}</span>
                         held at {$e($event['venue'])} on {$e(Mailer::eventDates($event))},
-                        completing {$e((string) $c['sessions_attended'])} of {$e((string) $c['sessions_total'])} sessions{$unitsText}.
+                        completing {$e((string) $c['sessions_attended'])} of {$e((string) $c['sessions_total'])} sessions.
                     </div>
                 </div>
                 <div class="footer"><table><tr>
