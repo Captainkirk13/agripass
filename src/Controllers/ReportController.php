@@ -132,6 +132,7 @@ final class ReportController
         $event = EventContext::find($request->param('id'));
         $rows = Database::all(
             'SELECT s.session_name, s.session_date, m.last_name, m.first_name, m.prc_license_number, a.check_in_time,
+                    a.scan_latitude, a.scan_longitude,
                     u.full_name AS scanned_by, IF(a.is_offline_sync, "Yes", "No") AS offline, a.synced_at, a.device_id
              FROM attendances a
              JOIN event_sessions s ON s.session_id = a.session_id
@@ -143,7 +144,7 @@ final class ReportController
         );
 
         TableExport::send($format, self::slug($event) . '-checkins', 'Check-ins',
-            ['Session', 'Session date', 'Last name', 'First name', 'PRC license no.', 'Checked in at', 'Scanned by', 'Recorded offline', 'Synced at', 'Device'],
+            ['Session', 'Session date', 'Last name', 'First name', 'PRC license no.', 'Checked in at', 'Scan latitude', 'Scan longitude', 'Scanned by', 'Recorded offline', 'Synced at', 'Device'],
             array_map('array_values', $rows));
         AuditLog::record($user['user_id'], 'report.export', 'event', (int) $event['event_id'], ['format' => "checkins.{$format}", 'rows' => count($rows)]);
     }

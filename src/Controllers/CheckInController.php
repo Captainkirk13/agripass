@@ -22,11 +22,20 @@ final class CheckInController
         $user = Auth::require();
         $event = EventContext::resolve($request);
         EventContext::assertEditable($event);
-        $data = $request->validate(['qr_token' => 'required', 'session_id' => 'required', 'device_id' => 'optional', 'client_uuid' => 'optional']);
+        $data = $request->validate([
+            'qr_token' => 'required',
+            'session_id' => 'required',
+            'device_id' => 'optional',
+            'client_uuid' => 'optional',
+            'latitude' => 'optional',
+            'longitude' => 'optional',
+        ]);
         $session = self::sessionFor($event, (int) $data['session_id']);
         if ($data['client_uuid'] !== null && !self::isUuid($data['client_uuid'])) {
             throw new HttpException(422, 'Validation failed.', ['client_uuid' => 'Must be a UUID.']);
         }
+        $latitude = self::coordinate($data['latitude'], 'latitude', -90, 90);
+        $longitude = self::coordinate($data['longitude'], 'longitude', -180, 180);
 
         $result = CheckInService::checkIn(
             (string) $data['qr_token'],
@@ -34,6 +43,9 @@ final class CheckInController
             $user['user_id'],
             is_string($data['device_id']) ? mb_substr($data['device_id'], 0, 64) : null,
             $data['client_uuid'],
+            event: $event,
+            latitude: $latitude,
+            longitude: $longitude,
         );
         Response::json($result);
     }
@@ -49,6 +61,12 @@ final class CheckInController
                 'event_id' => (int) $event['event_id'],
                 'title' => $event['title'],
                 'status' => $event['status'],
+            ],
+            'geofence' => [
+                'enabled' => (bool) (int) ($event['geofence_enabled'] ?? 0),
+                'latitude' => isset($event['geofence_latitude']) ? (float) $event['geofence_latitude'] : null,
+                'longitude' => isset($event['geofence_longitude']) ? (float) $event['geofence_longitude'] : null,
+                'radius_m' => isset($event['geofence_radius_m']) ? (int) $event['geofence_radius_m'] : null,
             ],
             'sessions' => Database::all(
                 'SELECT session_id, session_name, session_date, start_time, end_time FROM event_sessions WHERE event_id = ? ORDER BY session_date, start_time',
@@ -114,6 +132,9 @@ final class CheckInController
                     $clientUuid,
                     $time,
                     offline: true,
+                    event: $event,
+                    latitude: self::looseCoordinate($record['latitude'] ?? null, -90, 90),
+                    longitude: self::looseCoordinate($record['longitude'] ?? null, -180, 180),
                 );
             }
 
@@ -126,6 +147,34 @@ final class CheckInController
             'summary' => $summary,
         ]);
         Response::json(['summary' => $summary, 'results' => $results]);
+    }
+
+    /** A present coordinate must be numeric and in range. Missing is allowed; the geofence check decides if that is enough. */
+    private static function coordinate(mixed $value, string $field, float $min, float $max): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value)) {
+            throw new HttpException(422, 'Validation failed.', [$field => 'Must be a number.']);
+        }
+        $number = (float) $value;
+        if ($number < $min || $number > $max) {
+            throw new HttpException(422, 'Validation failed.', [$field => "Must be between {$min} and {$max}."]);
+        }
+
+        return $number;
+    }
+
+    /** Offline sync keeps a bad coordinate as "no location" so that one record is rejected instead of the whole batch. */
+    private static function looseCoordinate(mixed $value, float $min, float $max): ?float
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+        $number = (float) $value;
+
+        return ($number < $min || $number > $max) ? null : $number;
     }
 
     private static function isUuid(mixed $value): bool

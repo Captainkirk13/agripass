@@ -7,6 +7,7 @@ const SYNC_BATCH = 500;
 const RETRY_MS = 15000;
 const REFRESH_MS = 60000;
 const SYNCED_RESULTS = ['valid', 'already_synced', 'duplicate'];
+const FIX_MAX_AGE_MS = 20000;
 
 export const MESSAGES = {
     valid: 'Welcome!',
@@ -14,7 +15,24 @@ export const MESSAGES = {
     wrong_event: 'This pass is for a different event.',
     invalid: 'Unrecognized or tampered QR pass.',
     not_in_roster: 'Pass not in the offline roster. It may be a new registration — direct to the Registration Desk.',
+    outside_fence: 'Outside the venue. Scan again inside the allowed radius.',
 };
+
+function locationError(err) {
+    if (err?.code === 1) return 'Location is blocked. Allow location for this site, then scan again inside the venue.';
+    if (err?.code === 3) return 'Location timed out. Move closer to a window or the entrance and scan again.';
+    return 'Location is unavailable. Turn on location services and scan again inside the venue.';
+}
+
+function metersBetween(lat1, lng1, lat2, lng2) {
+    const earth = 6371000;
+    const toRad = (deg) => deg * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return 2 * earth * Math.asin(Math.min(1, Math.sqrt(a)));
+}
 
 const key = (registrationId, sessionId) => `${registrationId}:${sessionId}`;
 
@@ -38,6 +56,8 @@ export class CheckInEngine extends EventTarget {
         this.byToken = new Map();
         this.attendance = new Map();
         this.timers = [];
+        this.fix = null;
+        this.watchId = null;
     }
 
     async load() {

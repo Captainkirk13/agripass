@@ -31,6 +31,10 @@ final class EventController
         'end_date' => 'required',
         'description' => 'optional',
         'certificate_min_attendance_pct' => 'optional',
+        'geofence_enabled' => 'optional',
+        'geofence_latitude' => 'optional',
+        'geofence_longitude' => 'optional',
+        'geofence_radius_m' => 'optional',
         'prc_accreditation_no' => 'optional',
         'cert_signatory_name' => 'optional',
         'cert_signatory_title' => 'optional',
@@ -65,7 +69,16 @@ final class EventController
         if ($event === null) {
             throw new HttpException(404, 'No event is currently open.');
         }
-        unset($event['created_by'], $event['cert_signature_path'], $event['cert_signature_2_path'], $event['registration_fee']);
+        unset(
+            $event['created_by'],
+            $event['cert_signature_path'],
+            $event['cert_signature_2_path'],
+            $event['registration_fee'],
+            $event['geofence_enabled'],
+            $event['geofence_latitude'],
+            $event['geofence_longitude'],
+            $event['geofence_radius_m'],
+        );
         Response::json(['event' => self::withDetails($event)]);
     }
 
@@ -74,8 +87,8 @@ final class EventController
         $user = Auth::require(Auth::ADMINS);
         $data = self::validated($request);
         $id = Database::insert(
-            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct, geofence_enabled, geofence_latitude, geofence_longitude, geofence_radius_m, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [...self::columns($data), $user['user_id']],
         );
         AuditLog::record($user['user_id'], 'event.create', 'event', $id);
@@ -90,7 +103,7 @@ final class EventController
         $data = self::validated($request);
         Database::run(
             'UPDATE events SET title = ?, event_type = ?, description = ?, venue = ?, start_date = ?, end_date = ?,
-                               certificate_min_attendance_pct = ?, prc_accreditation_no = ?,
+                               certificate_min_attendance_pct = ?, geofence_enabled = ?, geofence_latitude = ?, geofence_longitude = ?, geofence_radius_m = ?, prc_accreditation_no = ?,
                                cert_signatory_name = ?, cert_signatory_title = ?, cert_signatory_2_name = ?, cert_signatory_2_title = ?
              WHERE event_id = ?',
             [...self::columns($data), $event['event_id']],
@@ -207,11 +220,65 @@ final class EventController
         if ($pct !== null && (!is_numeric($pct) || $pct < 0 || $pct > 100)) {
             $errors['certificate_min_attendance_pct'] = 'Must be between 0 and 100.';
         }
+        $data['geofence_enabled'] = self::flag($data['geofence_enabled']) ? 1 : 0;
+        $data['geofence_latitude'] = self::decimal($data['geofence_latitude'], 'geofence_latitude', -90, 90, $errors);
+        $data['geofence_longitude'] = self::decimal($data['geofence_longitude'], 'geofence_longitude', -180, 180, $errors);
+        $data['geofence_radius_m'] = self::radius($data['geofence_radius_m'], $errors);
+        if ($data['geofence_enabled']) {
+            if ($data['geofence_latitude'] === null) {
+                $errors['geofence_latitude'] = 'Set the venue latitude, or use this device\'s location.';
+            }
+            if ($data['geofence_longitude'] === null) {
+                $errors['geofence_longitude'] = 'Set the venue longitude, or use this device\'s location.';
+            }
+            if ($data['geofence_radius_m'] === null) {
+                $errors['geofence_radius_m'] = 'Set how many meters from the venue a scan is still accepted.';
+            }
+        }
         if ($errors) {
             throw new HttpException(422, 'Validation failed.', $errors);
         }
 
         return $data;
+    }
+
+    private static function flag(mixed $value): bool
+    {
+        return $value === true || $value === 1 || $value === '1' || $value === 'true' || $value === 'on';
+    }
+
+    private static function decimal(mixed $value, string $field, float $min, float $max, array &$errors): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value)) {
+            $errors[$field] = 'Must be a number.';
+
+            return null;
+        }
+        $number = round((float) $value, 6);
+        if ($number < $min || $number > $max) {
+            $errors[$field] = "Must be between {$min} and {$max}.";
+
+            return null;
+        }
+
+        return $number;
+    }
+
+    private static function radius(mixed $value, array &$errors): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value) || (int) $value != $value || (int) $value < 10 || (int) $value > 5000) {
+            $errors['geofence_radius_m'] = 'Use a whole number of meters from 10 to 5000.';
+
+            return null;
+        }
+
+        return (int) $value;
     }
 
     private static function columns(array $data): array
@@ -224,6 +291,10 @@ final class EventController
             $data['start_date'],
             $data['end_date'],
             $data['certificate_min_attendance_pct'] ?? 80,
+            $data['geofence_enabled'],
+            $data['geofence_latitude'],
+            $data['geofence_longitude'],
+            $data['geofence_radius_m'],
             $data['prc_accreditation_no'],
             $data['cert_signatory_name'],
             $data['cert_signatory_title'],
