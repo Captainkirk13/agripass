@@ -111,6 +111,15 @@ function tabCount(event, key) {
     return count === undefined ? '' : ` <span class="badge rounded-pill text-bg-light border ms-1">${count}</span>`;
 }
 
+function fenceSummary(event) {
+    if (Number(event.geofence_enabled) !== 1) return 'Off';
+    const lat = event.geofence_latitude;
+    const lng = event.geofence_longitude;
+    const radius = event.geofence_radius_m;
+    if (lat == null || lng == null || radius == null) return 'On, but the venue location is incomplete';
+    return `On · scans within ${esc(radius)} m of ${esc(lat)}, ${esc(lng)}`;
+}
+
 function renderOverview(el, event) {
     const { stats } = event;
     const row = (label, value) => `<dt class="col-sm-5 text-muted fw-normal">${label}</dt><dd class="col-sm-7">${value || '<span class="text-muted">—</span>'}</dd>`;
@@ -124,6 +133,7 @@ function renderOverview(el, event) {
                         <dl class="row mb-0">
                             ${row('Event type', esc(event.event_type))}
                             ${row('Venue', esc(event.venue))}
+                            ${row('Check-in radius', fenceSummary(event))}
                             ${row('Dates', formatDateRange(event.start_date, event.end_date))}
                             ${row('Scheduled attendance', formatDuration(totalSessionHours(event.sessions)))}
                             ${row('Certificate attendance requirement', `${esc(event.certificate_min_attendance_pct)}% of sessions attended`)}

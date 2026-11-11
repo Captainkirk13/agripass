@@ -22,7 +22,8 @@ final class Mailer
         $mail->SMTPAutoTLS = Config::get('MAIL_ENCRYPTION') !== null;
         $mail->SMTPSecure = Config::get('MAIL_ENCRYPTION', '');
         $mail->CharSet = PHPMailer::CHARSET_UTF8;
-        $mail->setFrom(Config::get('MAIL_FROM', 'noreply@agripass.local'), Config::get('MAIL_FROM_NAME', 'PAA AgriPass'));
+        $from = Config::get('MAIL_FROM_ADDRESS') ?? Config::get('MAIL_FROM', 'noreply@agripass.local');
+        $mail->setFrom($from, Config::get('MAIL_FROM_NAME', 'PAA AgriPass'));
 
         return $mail;
     }

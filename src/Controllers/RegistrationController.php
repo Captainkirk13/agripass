@@ -97,7 +97,7 @@ final class RegistrationController
         ]], 201);
     }
 
-    /** Re-sends an existing pass to the registered email. Always responds the same way so emails can't be probed. */
+    /** Re-sends an existing pass. Unknown addresses get the same reply; a mail failure is reported so it can be retried. */
     public static function resend(Request $request): void
     {
         RateLimiter::assertUnder('registration.resend', 5, 15);
@@ -109,10 +109,11 @@ final class RegistrationController
              WHERE r.event_id = ? AND m.email = ?',
             [$event['event_id'], $email],
         );
-        if ($row !== null) {
-            PassMailer::send($event, $row, $row['qr_token']);
-        }
+        $sent = $row === null || PassMailer::send($event, $row, $row['qr_token']);
         AuditLog::record(null, 'registration.resend', 'event', (int) $event['event_id']);
+        if (!$sent) {
+            throw new HttpException(502, 'The email could not be sent. Please try again in a few minutes.');
+        }
 
         Response::json(['message' => 'If this email is registered for the event, the pass has been sent to it.']);
     }

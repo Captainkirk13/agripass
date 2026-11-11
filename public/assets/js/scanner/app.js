@@ -15,6 +15,7 @@ const RESULTS = {
     duplicate: { tone: 'danger', icon: 'exclamation-octagon-fill', title: 'Already checked in', sound: 'error' },
     wrong_event: { tone: 'warning', icon: 'exclamation-triangle-fill', title: 'Wrong event', sound: 'warning' },
     invalid: { tone: 'danger', icon: 'x-octagon-fill', title: 'Invalid pass', sound: 'error' },
+    outside_fence: { tone: 'warning', icon: 'geo-alt-fill', title: 'Outside the venue', sound: 'warning' },
     error: { tone: 'danger', icon: 'x-octagon-fill', title: 'Check-in failed', sound: 'error' },
 };
 
@@ -398,9 +399,11 @@ function updateStatus() {
 
     const roster = document.getElementById('roster-status');
     if (roster && engine.roster) {
+        const fence = engine.fenceLabel();
         roster.innerHTML = `<i class="bi bi-people me-1"></i><strong>${s.registered}</strong> attendees in roster
             (all registrations) · downloaded ${esc(clock(engine.roster.downloaded_at))}
-            ${engine.reachable ? '' : '<span class="badge text-bg-secondary ms-1">offline copy</span>'}`;
+            ${engine.reachable ? '' : '<span class="badge text-bg-secondary ms-1">offline copy</span>'}
+            ${fence ? `<div class="mt-1"><i class="bi bi-geo-alt me-1"></i>${esc(fence)}</div>` : ''}`;
     }
     const setupSync = document.getElementById('setup-sync');
     if (setupSync) {

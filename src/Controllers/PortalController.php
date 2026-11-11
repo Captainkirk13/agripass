@@ -38,7 +38,11 @@ final class PortalController
                 [$member['member_id']],
             )['total'];
             if ($recent < self::LINKS_PER_MEMBER) {
-                PortalMailer::sendLoginLink($member, MemberAuth::createLoginToken((int) $member['member_id']));
+                $token = MemberAuth::createLoginToken((int) $member['member_id']);
+                if (!PortalMailer::sendLoginLink($member, $token)) {
+                    MemberAuth::discardLoginToken($token);
+                    throw new HttpException(502, 'The email could not be sent. Please try again in a few minutes.');
+                }
             }
         }
 
