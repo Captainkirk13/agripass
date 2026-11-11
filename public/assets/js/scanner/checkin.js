@@ -8,6 +8,7 @@ const RETRY_MS = 15000;
 const REFRESH_MS = 60000;
 const SYNCED_RESULTS = ['valid', 'already_synced', 'duplicate'];
 const FIX_MAX_AGE_MS = 20000;
+const LOCATE_TIMEOUT_MS = 12000;
 
 export const MESSAGES = {
     valid: 'Welcome!',
@@ -16,12 +17,33 @@ export const MESSAGES = {
     invalid: 'Unrecognized or tampered QR pass.',
     not_in_roster: 'Pass not in the offline roster. It may be a new registration — direct to the Registration Desk.',
     outside_fence: 'Outside the venue. Scan again inside the allowed radius.',
+    fence_incomplete: 'Venue radius is turned on, but the event location is incomplete. An admin needs to set it before scanning.',
 };
 
 function locationError(err) {
+    if (!window.isSecureContext) {
+        return 'Location needs a secure page. Open the scanner with the https address, allow location, then scan again inside the venue.';
+    }
     if (err?.code === 1) return 'Location is blocked. Allow location for this site, then scan again inside the venue.';
     if (err?.code === 3) return 'Location timed out. Move closer to a window or the entrance and scan again.';
     return 'Location is unavailable. Turn on location services and scan again inside the venue.';
+}
+
+/** The venue circle from the roster, or null when the event does not restrict scans. */
+function activeFence(roster) {
+    const g = roster?.geofence;
+    if (!g?.enabled) return null;
+    const latitude = Number(g.latitude);
+    const longitude = Number(g.longitude);
+    const radius = Number(g.radius_m);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radius)) {
+        return { incomplete: true };
+    }
+    return { latitude, longitude, radius };
+}
+
+function positionBody(fix) {
+    return fix ? { latitude: fix.latitude, longitude: fix.longitude } : {};
 }
 
 function metersBetween(lat1, lng1, lat2, lng2) {
@@ -85,6 +107,15 @@ export class CheckInEngine extends EventTarget {
         this.timers.forEach(clearInterval);
         window.removeEventListener('online', this.onOnline);
         window.removeEventListener('offline', this.onOffline);
+        this.clearWatch();
+    }
+
+    /** One line for the setup screen when this event only accepts scans near the venue. */
+    fenceLabel() {
+        const fence = activeFence(this.roster);
+        if (!fence) return '';
+        if (fence.incomplete) return MESSAGES.fence_incomplete;
+        return `Venue radius is on: scans must be within ${fence.radius} m. Allow location when the browser asks.`;
     }
 
     get sessions() {
@@ -126,13 +157,93 @@ export class CheckInEngine extends EventTarget {
                 this.attendance.set(key(record.registration_id, record.session_id), record.check_in_time);
             }
         }
+        this.watchFence();
+    }
+
+    watchFence() {
+        const fence = activeFence(this.roster);
+        if (!fence || fence.incomplete || !navigator.geolocation || !window.isSecureContext) {
+            this.clearWatch();
+            return;
+        }
+        if (this.watchId != null) return;
+        this.watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                this.fix = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    at: Date.now(),
+                };
+            },
+            () => {},
+            { enableHighAccuracy: true, maximumAge: FIX_MAX_AGE_MS, timeout: LOCATE_TIMEOUT_MS },
+        );
+    }
+
+    clearWatch() {
+        if (this.watchId != null && navigator.geolocation) {
+            navigator.geolocation.clearWatch(this.watchId);
+        }
+        this.watchId = null;
+    }
+
+    freshFix() {
+        if (!this.fix || Date.now() - this.fix.at > FIX_MAX_AGE_MS) return null;
+        return this.fix;
+    }
+
+    locate() {
+        const cached = this.freshFix();
+        if (cached) return Promise.resolve(cached);
+        if (!navigator.geolocation || !window.isSecureContext) {
+            return Promise.reject({ code: window.isSecureContext ? 2 : 1 });
+        }
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                this.fix = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    at: Date.now(),
+                };
+                resolve(this.fix);
+            }, reject, { enableHighAccuracy: true, maximumAge: FIX_MAX_AGE_MS, timeout: LOCATE_TIMEOUT_MS });
+        });
+    }
+
+    /**
+     * When the event has a venue radius, a scan needs a recent location inside that circle.
+     * The same reading is sent to the server, which checks it again.
+     */
+    async gateLocation() {
+        const fence = activeFence(this.roster);
+        if (!fence) return { fix: null };
+        if (fence.incomplete) {
+            return { blocked: { result: 'outside_fence', message: MESSAGES.fence_incomplete, offline: !this.reachable } };
+        }
+        let fix;
+        try {
+            fix = await this.locate();
+        } catch (err) {
+            return { blocked: { result: 'outside_fence', message: locationError(err), offline: !this.reachable } };
+        }
+        const away = metersBetween(fence.latitude, fence.longitude, fix.latitude, fix.longitude);
+        if (away > fence.radius) {
+            return {
+                blocked: {
+                    result: 'outside_fence',
+                    message: `Outside the venue. This scan is about ${Math.round(away)} m away, and only scans within ${fence.radius} m are accepted.`,
+                    offline: !this.reachable,
+                },
+            };
+        }
+        return { fix };
     }
 
     search(query) {
         const q = query.trim().toLowerCase();
         if (q.length < 2) return [];
         return this.roster.registrations
-            .filter((r) => `${r.name} ${r.prc_license_number || ''} ${r.chapter_region || ''}`.toLowerCase().includes(q))
+            .filter((r) => `${r.name} ${r.chapter_region || ''}`.toLowerCase().includes(q))
             .slice(0, 25)
             .map((r) => ({ ...r, checked_in_at: this.attendance.get(key(r.registration_id, this.sessionId)) || null }));
     }
@@ -142,13 +253,22 @@ export class CheckInEngine extends EventTarget {
         const clientUuid = store.uuid();
         const checkInTime = new Date().toISOString();
         const sessionId = Number(this.sessionId);
+        const gate = await this.gateLocation();
+        if (gate.blocked) return gate.blocked;
+        const fix = gate.fix;
 
         if (this.reachable && !this.needsLogin) {
             try {
                 const res = await api('/checkin', {
                     method: 'POST',
                     headers: { 'X-Event-ID': String(this.eventId) },
-                    body: { qr_token: token, session_id: sessionId, device_id: this.deviceId, client_uuid: clientUuid },
+                    body: {
+                        qr_token: token,
+                        session_id: sessionId,
+                        device_id: this.deviceId,
+                        client_uuid: clientUuid,
+                        ...positionBody(fix),
+                    },
                     timeout: SCAN_TIMEOUT_MS,
                 });
                 this.setReachable(true);
@@ -164,7 +284,7 @@ export class CheckInEngine extends EventTarget {
             }
         }
 
-        return this.checkInOffline(token, sessionId, clientUuid, checkInTime);
+        return this.checkInOffline(token, sessionId, clientUuid, checkInTime, fix);
     }
 
     afterServerResult(token, sessionId, res) {
@@ -177,7 +297,7 @@ export class CheckInEngine extends EventTarget {
         return { ...res, result: res.result === 'already_synced' ? 'valid' : res.result, attendee, offline: false };
     }
 
-    async checkInOffline(token, sessionId, clientUuid, checkInTime) {
+    async checkInOffline(token, sessionId, clientUuid, checkInTime, fix = null) {
         const parts = token.split('|');
         if (parts.length !== 4 || parts[0] !== 'AGRIPASS') {
             return { result: 'invalid', message: MESSAGES.invalid, offline: true };
@@ -203,6 +323,8 @@ export class CheckInEngine extends EventTarget {
             qr_token: token,
             name: registration.name,
             check_in_time: checkInTime,
+            latitude: fix?.latitude ?? null,
+            longitude: fix?.longitude ?? null,
             status: 'pending',
         });
         this.recordAttendance(registration.registration_id, sessionId, checkInTime);
@@ -248,7 +370,13 @@ export class CheckInEngine extends EventTarget {
                 headers: { 'X-Event-ID': String(eventId) },
                 body: {
                     device_id: this.deviceId,
-                    records: records.map(({ client_uuid, session_id, qr_token, check_in_time }) => ({ client_uuid, session_id, qr_token, check_in_time })),
+                    records: records.map(({ client_uuid, session_id, qr_token, check_in_time, latitude, longitude }) => ({
+                        client_uuid,
+                        session_id,
+                        qr_token,
+                        check_in_time,
+                        ...positionBody(latitude == null || longitude == null ? null : { latitude, longitude }),
+                    })),
                 },
                 timeout: SYNC_TIMEOUT_MS,
             });

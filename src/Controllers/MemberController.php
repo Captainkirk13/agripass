@@ -17,11 +17,11 @@ use PDOException;
 final class MemberController
 {
     private const PAGE_SIZE = 50;
-    private const PROFILE_COLUMNS = 'm.member_id, m.prc_license_number, m.first_name, m.last_name, m.email,
+    private const PROFILE_COLUMNS = 'm.member_id, m.first_name, m.last_name, m.email,
         m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies,
         m.chapter_region, m.membership_status, m.created_at, m.last_portal_login_at';
 
-    /** Admin member directory: search by name, email, PRC license or PRC license, filter by status and chapter. */
+    /** Admin member directory: search by name or email, filter by status and chapter. */
     public static function index(Request $request): void
     {
         Auth::require(Auth::ADMINS);
@@ -85,10 +85,10 @@ final class MemberController
             Database::run(
                 'UPDATE members SET first_name = ?, last_name = ?, email = ?, contact_number = ?, designation = ?, nickname = ?,
                                     birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?,
-                                    prc_license_number = ?, membership_status = ? WHERE member_id = ?',
+                                    membership_status = ? WHERE member_id = ?',
                 [$data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['designation'], $data['nickname'],
                  $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'],
-                 $data['prc_license_number'], $data['membership_status'], $member['member_id']],
+                 $data['membership_status'], $member['member_id']],
             );
         } catch (PDOException $e) {
             if ($e->getCode() !== '23000') {
@@ -128,8 +128,8 @@ final class MemberController
         if ($q !== '') {
             $like = '%' . addcslashes($q, '%_\\') . '%';
             $clauses[] = "(CONCAT(m.first_name, ' ', m.last_name) LIKE ? OR CONCAT(m.last_name, ', ', m.first_name) LIKE ?
-                           OR m.email LIKE ? OR m.prc_license_number LIKE ?)";
-            array_push($params, $like, $like, $like, $like);
+                           OR m.email LIKE ?)";
+            array_push($params, $like, $like, $like);
         }
         $status = (string) $request->query('status', '');
         if (in_array($status, MemberProfile::STATUSES, true)) {

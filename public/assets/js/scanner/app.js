@@ -15,6 +15,7 @@ const RESULTS = {
     duplicate: { tone: 'danger', icon: 'exclamation-octagon-fill', title: 'Already checked in', sound: 'error' },
     wrong_event: { tone: 'warning', icon: 'exclamation-triangle-fill', title: 'Wrong event', sound: 'warning' },
     invalid: { tone: 'danger', icon: 'x-octagon-fill', title: 'Invalid pass', sound: 'error' },
+    outside_fence: { tone: 'warning', icon: 'geo-alt-fill', title: 'Outside the venue', sound: 'warning' },
     error: { tone: 'danger', icon: 'x-octagon-fill', title: 'Check-in failed', sound: 'error' },
 };
 
@@ -398,9 +399,11 @@ function updateStatus() {
 
     const roster = document.getElementById('roster-status');
     if (roster && engine.roster) {
+        const fence = engine.fenceLabel();
         roster.innerHTML = `<i class="bi bi-people me-1"></i><strong>${s.registered}</strong> attendees in roster
             (all registrations) · downloaded ${esc(clock(engine.roster.downloaded_at))}
-            ${engine.reachable ? '' : '<span class="badge text-bg-secondary ms-1">offline copy</span>'}`;
+            ${engine.reachable ? '' : '<span class="badge text-bg-secondary ms-1">offline copy</span>'}
+            ${fence ? `<div class="mt-1"><i class="bi bi-geo-alt me-1"></i>${esc(fence)}</div>` : ''}`;
     }
     const setupSync = document.getElementById('setup-sync');
     if (setupSync) {
@@ -535,7 +538,7 @@ function showStaffResult(result) {
         <div class="min-w-0">
             <div class="result-title">${style.title}</div>
             ${a ? `<div class="result-name text-truncate">${esc(a.name)}</div>
-                <div class="result-meta">${esc([a.chapter_region, a.prc_license_number && `PRC ${a.prc_license_number}`].filter(Boolean).join(' · '))}</div>` : ''}
+                <div class="result-meta">${esc(a.chapter_region || '')}</div>` : ''}
             <div class="result-message">${esc(result.message || '')}</div>
             ${lines.map((l) => `<div class="result-meta">${esc(l)}</div>`).join('')}
         </div>`;
@@ -589,7 +592,7 @@ async function renderStaff() {
                         <div class="card mt-3">
                             <div class="card-body">
                                 <label class="form-label small fw-semibold" for="search">Can't scan? Find the attendee</label>
-                                <input class="form-control" id="search" type="search" placeholder="Name, PRC license or chapter" autocomplete="off">
+                                <input class="form-control" id="search" type="search" placeholder="Name or chapter" autocomplete="off">
                                 <ul class="search-results list-unstyled mb-0" id="search-results"></ul>
                                 <form class="input-group input-group-sm mt-3" id="code-form">
                                     <input class="form-control" name="code" placeholder="Or type / paste the pass code (AGRIPASS|…)" autocomplete="off" aria-label="Pass code">
@@ -620,7 +623,7 @@ async function renderStaff() {
             <li class="search-item">
                 <div class="min-w-0 me-auto">
                     <div class="fw-semibold text-truncate">${esc(r.name)}</div>
-                    <div class="small text-muted text-truncate">${esc([r.chapter_region, r.prc_license_number && `PRC ${r.prc_license_number}`].filter(Boolean).join(' · '))}</div>
+                    <div class="small text-muted text-truncate">${esc(r.chapter_region || '')}</div>
                 </div>
                 ${r.checked_in_at
                     ? `<span class="badge text-bg-light text-nowrap"><i class="bi bi-check2"></i> ${esc(clock(r.checked_in_at))}</span>`

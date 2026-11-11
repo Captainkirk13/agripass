@@ -25,7 +25,6 @@ CREATE TABLE logs (
 
 CREATE TABLE members (
     member_id INT AUTO_INCREMENT PRIMARY KEY,
-    prc_license_number VARCHAR(50) NULL,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -54,7 +53,6 @@ CREATE TABLE events (
     geofence_latitude DECIMAL(9,6) NULL,
     geofence_longitude DECIMAL(9,6) NULL,
     geofence_radius_m SMALLINT UNSIGNED NULL,
-    prc_accreditation_no VARCHAR(100) NULL,
     cert_signatory_name VARCHAR(100) NULL,
     cert_signatory_title VARCHAR(150) NULL,
     cert_signature_path VARCHAR(255) NULL,

@@ -6,7 +6,7 @@ import { renderLogin } from './views/login.js';
 import { renderDashboard } from './views/dashboard.js?v=20261107-duration2';
 import { renderEventList } from './views/event-list.js';
 import { renderEventForm } from './views/event-form.js';
-import { renderEventDetail } from './views/event-detail.js?v=20261107-duration2';
+import { renderEventDetail } from './views/event-detail.js?v=20261111-geofence';
 import { renderUsers } from './views/users.js';
 import { renderMemberDetail, renderMembers } from './views/members.js';
 import { renderHelp } from './views/help.js';

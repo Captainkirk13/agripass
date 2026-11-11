@@ -39,8 +39,8 @@ password at first sign-in.
 | Gate Staff | QR scanner and read-only dashboard |
 
 Upgrading an existing database: schema files only run when the database is first created, so apply any newer
-`database/schema/*.sql` files and `database/migrations/*.sql` by hand (`005_registration_profile_and_signatories.sql` for profile fields and `006_remove_certificate_unit_fields.sql` for the latest certificate change), for example
-`docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/migrations/006_remove_certificate_unit_fields.sql`.
+`database/schema/*.sql` files and `database/migrations/*.sql` by hand (`005_registration_profile_and_signatories.sql` for profile fields, `006_remove_certificate_unit_fields.sql` for the certificate change, and `008_drop_prc_fields.sql` to drop PRC license and accreditation columns), for example
+`docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/migrations/008_drop_prc_fields.sql`.
 
 ## Attendance certificates
 
@@ -64,16 +64,16 @@ through PAA staff. While signed in, the public registration form fills in their 
 
 ## Member directory
 
-Admins can browse everyone who has registered under **Members**: search by name, email or PRC license,
+Admins can browse everyone who has registered under **Members**: search by name or email,
 filter by membership status or chapter, and open a member to see their event history, attendance and certificates.
 Admins can correct a member's details there, including email and PAA membership status. Changing the email cancels
 any unused portal sign-in links. Edits are recorded in the audit log, and certificates that were already issued keep
-the name and license printed on them.
+the name printed on them.
 
 ## Reports and exports
 
 Each event's **Reports** tab (admins only) shows registration, turnout and certificate figures, attendance per
-session, arrivals per hour, a breakdown by chapter, PRC license and PAA membership, and tallies of the custom
+session, arrivals per hour, a breakdown by chapter and PAA membership, and tallies of the custom
 registration questions. From there you can download:
 
 - **Summary PDF**: the same figures as a printable A4 executive summary.
@@ -81,9 +81,8 @@ registration questions. From there you can download:
   certificate number, plus their registration answers. This is the file for attendance records.
 - **Check-in log**: every scan with who recorded it and whether it was synced from offline.
 
-The **Members** page also exports the whole directory. Every export comes as Excel or CSV. Use Excel for PRC
-submissions: Excel removes the leading zeros from license numbers like `0071234` when it opens a CSV, while the
-`.xlsx` file stores them as text. CSV files are UTF-8 with a byte-order mark, and in both formats values that start
+The **Members** page also exports the whole directory. Every export comes as Excel or CSV. Excel removes leading
+zeros when it opens a CSV, while the `.xlsx` file stores them as text. CSV files are UTF-8 with a byte-order mark, and in both formats values that start
 with `=`, `+`, `-` or `@` cannot run as spreadsheet formulas. Every download is recorded in the audit log.
 
 ## Staff guide

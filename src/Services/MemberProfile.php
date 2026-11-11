@@ -14,7 +14,7 @@ final class MemberProfile
 
     private const LIMITS = [
         'first_name' => 50, 'last_name' => 50, 'email' => 100, 'contact_number' => 20,
-        'chapter_region' => 100, 'prc_license_number' => 50, 'designation' => 100, 'nickname' => 50,
+        'chapter_region' => 100, 'designation' => 100, 'nickname' => 50,
         'flight_arrival' => 100, 'flight_departure' => 100, 'food_allergies' => 1000,
     ];
 
@@ -26,7 +26,6 @@ final class MemberProfile
             'last_name' => 'required',
             'contact_number' => 'optional',
             'chapter_region' => 'optional',
-            'prc_license_number' => 'optional',
             'designation' => 'optional',
             'nickname' => 'optional',
             'birthdate' => 'optional',

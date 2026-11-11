@@ -19,7 +19,7 @@ final class PassController
         $token = self::token($request);
         $pass = Database::one(
             "SELECT r.registration_id, r.registration_date,
-                    m.first_name, m.last_name, m.chapter_region, m.prc_license_number,
+                    m.first_name, m.last_name, m.chapter_region,
                     e.event_id, e.title, e.venue, e.start_date, e.end_date, e.status AS event_status
              FROM registrations r
              JOIN members m ON m.member_id = r.member_id

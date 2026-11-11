@@ -18,6 +18,8 @@ export async function renderEventForm(eventId = null) {
     }
     const v = (key, fallback = '') => esc(event[key] ?? fallback);
     const back = eventId ? `#/events/${eventId}` : '#/events';
+    const fenceOn = Number(event.geofence_enabled) === 1;
+    const radius = event.geofence_radius_m == null || event.geofence_radius_m === '' ? '200' : event.geofence_radius_m;
 
     view.innerHTML = `
         <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-2">
@@ -62,11 +64,41 @@ export async function renderEventForm(eventId = null) {
                             </div>
                         </div>
                     </div>
+                    <div class="card mb-4">
+                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Check-in location</h2></div>
+                        <div class="card-body row g-3">
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="geofence_enabled" name="geofence_enabled" ${fenceOn ? 'checked' : ''}>
+                                    <label class="form-check-label" for="geofence_enabled">Only accept scans inside a radius of the venue</label>
+                                </div>
+                                <div class="form-text">Phone location indoors is often 50–100 m off. About 200 m covers a venue without rejecting people at the door. Scanners must use the https address so the browser can read location.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="geofence_latitude">Latitude</label>
+                                <input class="form-control" id="geofence_latitude" name="geofence_latitude" inputmode="decimal" value="${v('geofence_latitude')}" placeholder="14.599512">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="geofence_longitude">Longitude</label>
+                                <input class="form-control" id="geofence_longitude" name="geofence_longitude" inputmode="decimal" value="${v('geofence_longitude')}" placeholder="120.984222">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="geofence_radius_m">Radius</label>
+                                <div class="input-group">
+                                    <input class="form-control" type="number" min="10" max="5000" step="1" id="geofence_radius_m" name="geofence_radius_m" value="${esc(radius)}">
+                                    <span class="input-group-text">m</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" id="use-location"><i class="bi bi-geo-alt me-1"></i>Use this device's location</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-lg-4">
                     <div class="card mb-4">
-                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate &amp; PRC details</h2></div>
+                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate details</h2></div>
                         <div class="card-body row g-3">
                             <div class="col-12">
                                 <label class="form-label" for="certificate_min_attendance_pct">Minimum attendance for certificate</label>
@@ -74,10 +106,6 @@ export async function renderEventForm(eventId = null) {
                                     <input class="form-control" type="number" min="0" max="100" id="certificate_min_attendance_pct" name="certificate_min_attendance_pct" value="${v('certificate_min_attendance_pct', '80')}">
                                     <span class="input-group-text">% of sessions</span>
                                 </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="prc_accreditation_no">PRC accreditation no.</label>
-                                <input class="form-control" id="prc_accreditation_no" name="prc_accreditation_no" value="${v('prc_accreditation_no')}" maxlength="100">
                             </div>
                         </div>
                     </div>
@@ -110,6 +138,21 @@ export async function renderEventForm(eventId = null) {
         </form>`;
 
     const form = document.getElementById('event-form');
+    document.getElementById('use-location').addEventListener('click', () => {
+        if (!navigator.geolocation || !window.isSecureContext) {
+            toast('Location needs a secure page (https or localhost) and a browser that can read it.', 'warning');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition((pos) => {
+            form.geofence_latitude.value = pos.coords.latitude.toFixed(6);
+            form.geofence_longitude.value = pos.coords.longitude.toFixed(6);
+            toast('Venue location filled in from this device.');
+        }, (err) => {
+            toast(err.code === 1
+                ? 'Location is blocked. Allow location for this site and try again.'
+                : 'Could not read this device\'s location.', 'warning');
+        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    });
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearFormErrors(form);

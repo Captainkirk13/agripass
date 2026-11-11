@@ -38,7 +38,11 @@ final class PortalController
                 [$member['member_id']],
             )['total'];
             if ($recent < self::LINKS_PER_MEMBER) {
-                PortalMailer::sendLoginLink($member, MemberAuth::createLoginToken((int) $member['member_id']));
+                $token = MemberAuth::createLoginToken((int) $member['member_id']);
+                if (!PortalMailer::sendLoginLink($member, $token)) {
+                    MemberAuth::discardLoginToken($token);
+                    throw new HttpException(502, 'The email could not be sent. Please try again in a few minutes.');
+                }
             }
         }
 
@@ -76,9 +80,9 @@ final class PortalController
 
         try {
             Database::run(
-                'UPDATE members SET first_name = ?, last_name = ?, contact_number = ?, designation = ?, nickname = ?, birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?, prc_license_number = ?
+                'UPDATE members SET first_name = ?, last_name = ?, contact_number = ?, designation = ?, nickname = ?, birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?
                  WHERE member_id = ?',
-                [$data['first_name'], $data['last_name'], $data['contact_number'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'], $data['prc_license_number'], $member['member_id']],
+                [$data['first_name'], $data['last_name'], $data['contact_number'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'], $member['member_id']],
             );
         } catch (PDOException $e) {
             if ($e->getCode() !== '23000') {

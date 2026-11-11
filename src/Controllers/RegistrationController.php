@@ -29,7 +29,6 @@ final class RegistrationController
             'first_name' => 'required',
             'last_name' => 'required',
             'email' => 'required',
-            'prc_license_number' => 'optional',
             'contact_number' => 'optional',
             'chapter_region' => 'optional',
             'designation' => 'optional',
@@ -97,7 +96,7 @@ final class RegistrationController
         ]], 201);
     }
 
-    /** Re-sends an existing pass to the registered email. Always responds the same way so emails can't be probed. */
+    /** Re-sends an existing pass. Unknown addresses get the same reply; a mail failure is reported so it can be retried. */
     public static function resend(Request $request): void
     {
         RateLimiter::assertUnder('registration.resend', 5, 15);
@@ -109,10 +108,11 @@ final class RegistrationController
              WHERE r.event_id = ? AND m.email = ?',
             [$event['event_id'], $email],
         );
-        if ($row !== null) {
-            PassMailer::send($event, $row, $row['qr_token']);
-        }
+        $sent = $row === null || PassMailer::send($event, $row, $row['qr_token']);
         AuditLog::record(null, 'registration.resend', 'event', (int) $event['event_id']);
+        if (!$sent) {
+            throw new HttpException(502, 'The email could not be sent. Please try again in a few minutes.');
+        }
 
         Response::json(['message' => 'If this email is registered for the event, the pass has been sent to it.']);
     }
@@ -123,7 +123,7 @@ final class RegistrationController
         $event = EventContext::find($request->param('id'));
         Response::json(['registrations' => Database::all(
             'SELECT r.registration_id, r.custom_responses, r.registration_date,
-                    m.member_id, m.first_name, m.last_name, m.email, m.chapter_region, m.prc_license_number, m.contact_number,
+                    m.member_id, m.first_name, m.last_name, m.email, m.chapter_region, m.contact_number,
                     m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies,
                     (SELECT COUNT(*) FROM attendances a WHERE a.registration_id = r.registration_id) AS sessions_attended
              FROM registrations r JOIN members m ON m.member_id = r.member_id
@@ -137,17 +137,17 @@ final class RegistrationController
         $existing = Database::one('SELECT member_id FROM members WHERE email = ?', [$data['email']]);
         if ($existing === null) {
             return Database::insert(
-                'INSERT INTO members (prc_license_number, first_name, last_name, email, contact_number, chapter_region, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [$data['prc_license_number'], $data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies']],
+                'INSERT INTO members (first_name, last_name, email, contact_number, chapter_region, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies']],
             );
         }
         Database::run(
-            'UPDATE members SET prc_license_number = COALESCE(prc_license_number, ?), contact_number = COALESCE(contact_number, ?),
+            'UPDATE members SET contact_number = COALESCE(contact_number, ?),
                                 chapter_region = COALESCE(chapter_region, ?), designation = COALESCE(designation, ?), nickname = COALESCE(nickname, ?),
                                 birthdate = COALESCE(birthdate, ?), flight_arrival = COALESCE(flight_arrival, ?), flight_departure = COALESCE(flight_departure, ?),
                                 food_allergies = COALESCE(food_allergies, ?) WHERE member_id = ?',
-            [$data['prc_license_number'], $data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $existing['member_id']],
+            [$data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $existing['member_id']],
         );
         return (int) $existing['member_id'];
     }

@@ -38,12 +38,10 @@ function details(c) {
             <div class="card-body">
                 <dl class="row mb-0 small">
                     ${row('Attendee', `<strong>${esc(c.attendee_name)}</strong>`)}
-                    ${row('PRC license no.', esc(c.prc_license_number))}
                     ${row('Event', esc(c.event_title))}
                     ${row('Venue', esc(c.event_venue))}
                     ${row('Dates', formatDateRange(c.event_start_date, c.event_end_date))}
                     ${row('Sessions attended', `${c.sessions_attended} of ${c.sessions_total}`)}
-                    ${row('PRC accreditation no.', esc(c.prc_accreditation_no))}
                     ${row('Certificate no.', esc(c.certificate_no))}
                     ${row('Issued', formatDate(c.issued_at))}
                 </dl>

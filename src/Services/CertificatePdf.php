@@ -48,8 +48,6 @@ final class CertificatePdf
         $signatureFile2 = self::signatureFile($event['cert_signature_2_path'] ?? null);
         $signature2 = $signatureFile2 ? '<img class="sig-img" src="' . $dataUri((string) file_get_contents($signatureFile2)) . '">' : '<div class="sig-space"></div>';
 
-        $license = $c['prc_license_number'] ? '<div class="license">PRC License No. ' . $e($c['prc_license_number']) . '</div>' : '';
-        $accreditation = $event['prc_accreditation_no'] ? 'PRC Accreditation No. <strong>' . $e($event['prc_accreditation_no']) . '</strong><br>' : '';
         $issued = (new \DateTimeImmutable($c['issued_at'] ?? 'now'))->format('F j, Y');
         $watermark = $sample ? '<div class="watermark">SAMPLE</div>' : '';
 
@@ -70,7 +68,6 @@ final class CertificatePdf
                 .certifies { margin-top: 5mm; font-size: 11pt; color: #4a5a50; }
                 .name { display: inline-block; margin-top: 3mm; padding: 0 12mm 1.5mm; border-bottom: .5mm solid #ffd230;
                         font-family: 'DejaVu Serif', serif; font-size: 25pt; font-weight: bold; color: #123b26; }
-                .license { margin-top: 1.5mm; font-size: 9.5pt; color: #4a5a50; }
                 .body { margin: 4.5mm auto 0; width: 200mm; font-size: 11.5pt; line-height: 1.55; }
                 .event { font-weight: bold; color: #123b26; }
                 .footer { position: absolute; left: 28mm; right: 28mm; bottom: 21mm; }
@@ -96,7 +93,6 @@ final class CertificatePdf
                     <h1>CERTIFICATE OF ATTENDANCE</h1>
                     <div class="certifies">This is to certify that</div>
                     <div class="name">{$e($c['attendee_name'])}</div>
-                    {$license}
                     <div class="body">
                         has attended <span class="event">{$e($event['title'])}</span>
                         held at {$e($event['venue'])} on {$e(Mailer::eventDates($event))},
@@ -105,7 +101,6 @@ final class CertificatePdf
                 </div>
                 <div class="footer"><table><tr>
                     <td class="meta">
-                        {$accreditation}
                         Certificate No. <strong>{$e($c['certificate_no'])}</strong><br>
                         Issued {$e($issued)}
                     </td>

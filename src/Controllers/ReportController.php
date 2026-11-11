@@ -80,7 +80,7 @@ final class ReportController
 
         $registrants = Database::all(
             'SELECT r.registration_id, r.registration_date, r.custom_responses,
-                    m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.prc_license_number, m.chapter_region, m.membership_status
+                    m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.chapter_region, m.membership_status
              FROM registrations r JOIN members m ON m.member_id = r.member_id
              WHERE r.event_id = ? ORDER BY m.last_name, m.first_name',
             [$event['event_id']],
@@ -94,7 +94,7 @@ final class ReportController
             $checkins[$a['registration_id']][$a['session_id']] = $a['check_in_time'];
         }
 
-        $header = ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'PRC license no.', 'Chapter / region', 'PAA membership', 'Registered at'];
+        $header = ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'Chapter / region', 'PAA membership', 'Registered at'];
         foreach ($sessions as $s) {
             $header[] = "Check-in: {$s['session_name']}";
         }
@@ -107,7 +107,7 @@ final class ReportController
             $certificate = $eligibility[(int) $r['registration_id']];
             $answers = json_decode((string) $r['custom_responses'], true) ?: [];
             $hasCertificate = $certificate['certificate_id'] !== null && $certificate['revoked_at'] === null;
-            $line = [$r['last_name'], $r['first_name'], $r['email'], $r['contact_number'], $r['designation'], $r['nickname'], $r['birthdate'], $r['flight_arrival'], $r['flight_departure'], $r['food_allergies'], $r['prc_license_number'], $r['chapter_region'], $r['membership_status'], $r['registration_date']];
+            $line = [$r['last_name'], $r['first_name'], $r['email'], $r['contact_number'], $r['designation'], $r['nickname'], $r['birthdate'], $r['flight_arrival'], $r['flight_departure'], $r['food_allergies'], $r['chapter_region'], $r['membership_status'], $r['registration_date']];
             foreach ($sessions as $s) {
                 $line[] = $checkins[$r['registration_id']][$s['session_id']] ?? '';
             }
@@ -131,7 +131,7 @@ final class ReportController
         $user = Auth::require(Auth::ADMINS);
         $event = EventContext::find($request->param('id'));
         $rows = Database::all(
-            'SELECT s.session_name, s.session_date, m.last_name, m.first_name, m.prc_license_number, a.check_in_time,
+            'SELECT s.session_name, s.session_date, m.last_name, m.first_name, a.check_in_time,
                     a.scan_latitude, a.scan_longitude,
                     u.full_name AS scanned_by, IF(a.is_offline_sync, "Yes", "No") AS offline, a.synced_at, a.device_id
              FROM attendances a
@@ -144,7 +144,7 @@ final class ReportController
         );
 
         TableExport::send($format, self::slug($event) . '-checkins', 'Check-ins',
-            ['Session', 'Session date', 'Last name', 'First name', 'PRC license no.', 'Checked in at', 'Scan latitude', 'Scan longitude', 'Scanned by', 'Recorded offline', 'Synced at', 'Device'],
+            ['Session', 'Session date', 'Last name', 'First name', 'Checked in at', 'Scan latitude', 'Scan longitude', 'Scanned by', 'Recorded offline', 'Synced at', 'Device'],
             array_map('array_values', $rows));
         AuditLog::record($user['user_id'], 'report.export', 'event', (int) $event['event_id'], ['format' => "checkins.{$format}", 'rows' => count($rows)]);
     }
@@ -153,14 +153,14 @@ final class ReportController
     {
         $user = Auth::require(Auth::ADMINS);
         $rows = Database::all(
-            'SELECT m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.prc_license_number, m.chapter_region,
+            'SELECT m.last_name, m.first_name, m.email, m.contact_number, m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies, m.chapter_region,
                     m.membership_status, m.created_at,
                     (SELECT COUNT(*) FROM registrations r WHERE r.member_id = m.member_id) AS events
              FROM members m ORDER BY m.last_name, m.first_name',
         );
 
         TableExport::send($format, 'agripass-members-' . date('Y-m-d'), 'Members',
-            ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'PRC license no.', 'Chapter / region', 'PAA membership',
+            ['Last name', 'First name', 'Email', 'Contact number', 'Designation / position', 'Nickname', 'Birthdate', 'Flight arrival', 'Flight departure', 'Food allergies', 'Chapter / region', 'PAA membership',
              'First registered', 'Events registered'],
             array_map('array_values', $rows));
         AuditLog::record($user['user_id'], 'report.export', 'member', null, ['format' => "members.{$format}", 'rows' => count($rows)]);

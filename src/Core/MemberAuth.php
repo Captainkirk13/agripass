@@ -24,6 +24,15 @@ final class MemberAuth
         return $token;
     }
 
+    /** Drops a link that was never emailed, so a mail failure does not use up the member's quota. */
+    public static function discardLoginToken(string $token): void
+    {
+        Database::run(
+            'DELETE FROM member_login_tokens WHERE token_hash = ? AND used_at IS NULL',
+            [hash('sha256', $token)],
+        );
+    }
+
     /** Consumes the token and signs the member in. Using one link invalidates the member's other outstanding links. */
     public static function redeem(string $token): ?array
     {
@@ -54,7 +63,7 @@ final class MemberAuth
         $id = $_SESSION['member_id'] ?? null;
 
         return $id === null ? null : Database::one(
-            'SELECT member_id, first_name, last_name, email, contact_number, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies, chapter_region, prc_license_number,
+            'SELECT member_id, first_name, last_name, email, contact_number, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies, chapter_region,
                     membership_status, created_at
              FROM members WHERE member_id = ?',
             [$id],

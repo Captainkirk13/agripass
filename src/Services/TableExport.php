@@ -41,7 +41,7 @@ final class TableExport
 
     /**
      * Every cell is written with an explicit type, so attendee text is never evaluated as a formula and
-     * identifiers like PRC license "0071234" keep their leading zeros.
+     * identifiers that look like numbers keep their leading zeros.
      */
     private static function xlsx(string $filename, string $sheetTitle, array $header, array $rows): void
     {

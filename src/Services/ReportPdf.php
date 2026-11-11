@@ -76,7 +76,6 @@ final class ReportPdf
         $venue = $e($event['venue']);
         $dates = $e(Mailer::eventDates($event));
         $status = $e($event['status']);
-        $accreditation = $event['prc_accreditation_no'] ? ' · PRC accreditation ' . $e($event['prc_accreditation_no']) : '';
         $kpiRow1 = $kpi('Registered', (string) $k['registered'], $k['registered'] . ' registrations')
             . $kpi('Attended', (string) $k['attended'], $k['turnout_pct'] . '% turnout')
             . $kpi('Certificate eligible', (string) $k['certificate_eligible'], $k['certificates_issued'] . ' certificates issued')
@@ -119,7 +118,7 @@ final class ReportPdf
                     <img src="{$logo}">
                     <div class="doc-title">Event executive summary</div>
                     <h1>{$title}</h1>
-                    <div class="meta">{$venue} · {$dates} · Status: {$status}{$accreditation}</div>
+                    <div class="meta">{$venue} · {$dates} · Status: {$status}</div>
                     <div style="clear:both"></div>
                 </div>
 
@@ -138,10 +137,8 @@ final class ReportPdf
                 <h2>Chapter participation</h2>
                 {$groupTable($report['chapters'], 'Chapter / region')}
 
-                <table class="two-col" style="margin-top: 6px"><tr>
-                    <td class="col"><h2>PRC license status</h2>{$groupTable($report['licensed'], 'License', false)}</td>
-                    <td class="col"><h2>PAA membership</h2>{$groupTable($report['membership'], 'Membership', false)}</td>
-                </tr></table>
+                <h2>PAA membership</h2>
+                {$groupTable($report['membership'], 'Membership')}
 
                 <h2>Registration form answers</h2>
                 {$customFields}

@@ -12,7 +12,6 @@ const PROFILE_FIELDS = [
     ['first_name', 'First name', { required: true, maxlength: 50, autocomplete: 'given-name' }],
     ['last_name', 'Last name', { required: true, maxlength: 50, autocomplete: 'family-name' }],
     ['contact_number', 'Mobile number', { maxlength: 20, type: 'tel', autocomplete: 'tel', placeholder: '09XX XXX XXXX' }],
-    ['prc_license_number', 'PRC license number', { maxlength: 50 }],
     ['designation', 'Designation / position', { maxlength: 100 }],
     ['nickname', 'Nickname', { maxlength: 50 }],
     ['birthdate', 'Birthdate', { type: 'date' }],
@@ -195,7 +194,6 @@ function renderProfile(member) {
             ${row('Name', `${member.first_name} ${member.last_name}`)}
             ${row('Email', member.email)}
             ${row('Mobile number', member.contact_number)}
-            ${row('PRC license number', member.prc_license_number)}
             ${row('Designation / position', member.designation)}
             ${row('Nickname', member.nickname)}
             ${row('Birthdate', member.birthdate)}

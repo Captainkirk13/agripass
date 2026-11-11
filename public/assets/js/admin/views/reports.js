@@ -11,7 +11,7 @@ export async function renderReports(el, event) {
             <div class="card-body d-flex flex-wrap align-items-center gap-3">
                 <div class="me-auto">
                     <div class="fw-semibold">Downloads</div>
-                    <div class="small text-muted">Figures as of ${formatDateTime(report.generated_at)}. Use Excel for PRC submissions, since it keeps leading zeros in license numbers.</div>
+                    <div class="small text-muted">Figures as of ${formatDateTime(report.generated_at)}. Excel keeps leading zeros that a CSV would drop.</div>
                 </div>
                 <a class="btn btn-sm btn-primary" href="${base}/report.pdf" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-1"></i>Summary PDF</a>
                 ${exportGroup('Attendance &amp; Certificates', `${base}/exports/attendance`)}
@@ -31,10 +31,7 @@ export async function renderReports(el, event) {
         </div>
         <div class="row g-4 mb-4">
             <div class="col-xxl-6">${card('Chapter participation', groupTable('Chapter / region', report.chapters))}</div>
-            <div class="col-xxl-6"><div class="row g-4">
-                <div class="col-lg-6 col-xxl-12">${card('PRC license status', groupTable('License', report.licensed))}</div>
-                <div class="col-lg-6 col-xxl-12">${card('PAA membership', groupTable('Membership', report.membership))}</div>
-            </div></div>
+            <div class="col-xxl-6">${card('PAA membership', groupTable('Membership', report.membership))}</div>
         </div>
         ${card('Registration form answers', customFields(report.custom_fields))}`;
 }
