@@ -11,7 +11,7 @@ services:
     env_file: .env
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:80"
-      - "127.0.0.1:${APP_TLS_PORT:-8443}:443"
+      - "${APP_TLS_BIND_IP:-127.0.0.1}:${APP_TLS_PORT:-8443}:443"
     volumes:
       - ./:/var/www/agripass
     depends_on:
