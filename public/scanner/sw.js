@@ -1,5 +1,5 @@
 // Bump when the shell file list changes so old caches are dropped.
-const CACHE = 'agripass-scanner-v3';
+const CACHE = 'agripass-scanner-v4';
 
 const SHELL = [
     '/scanner/',

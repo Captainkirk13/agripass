@@ -179,13 +179,13 @@ async function signOut() {
 async function scannerEvents() {
     try {
         const { events } = await api('/events', { timeout: 6000 });
-        const usable = events.filter((e) => Number(e.is_active) === 1 || e.status === 'Active');
+        const usable = events.filter((e) => ['Draft', 'Active'].includes(e.status));
         await store.setMeta('events', usable);
         return usable;
     } catch (err) {
         if (!isOffline(err)) throw err;
         const rosters = await store.allRosters();
-        return rosters.map((r) => ({ ...r.event, is_active: 0 }));
+        return rosters.map((r) => ({ ...r.event, is_active: 0 })).filter((e) => ['Draft', 'Active'].includes(e.status));
     }
 }
 
@@ -255,7 +255,7 @@ async function renderSetup() {
     const initial = events.find((e) => Number(e.event_id) === saved?.event_id)
         || events.find((e) => Number(e.is_active) === 1) || events[0];
     eventSelect.innerHTML = events.map((e) => `<option value="${e.event_id}" ${e === initial ? 'selected' : ''}>
-        ${esc(e.title)}${Number(e.is_active) === 1 ? ' (active event)' : ''}</option>`).join('');
+        ${esc(e.title)}${Number(e.is_active) === 1 ? ' (active event)' : e.status === 'Draft' ? ' (draft)' : ''}</option>`).join('');
 
     const loadEvent = async () => {
         const eventId = Number(eventSelect.value);
