@@ -28,7 +28,6 @@ export async function renderCertificates(el, event, reload) {
                     <div class="card-body">
                         <dl class="row mb-0 small">
                             ${row('Requirement', `At least ${settings.certificate_min_attendance_pct}% of ${event.sessions.length} session(s) attended`)}
-                            ${row('PRC accreditation no.', esc(settings.prc_accreditation_no))}
                             ${row('Signatory 1', settings.signatory_name ? `${esc(settings.signatory_name)}<div class="text-muted">${esc(settings.signatory_title)}</div>` : '<span class="text-danger">Not set</span>')}
                             ${row('Signatory 2', settings.signatory_2_name ? `${esc(settings.signatory_2_name)}<div class="text-muted">${esc(settings.signatory_2_title)}</div>` : '<span class="text-danger">Not set</span>')}
                         </dl>
@@ -100,7 +99,7 @@ export async function renderCertificates(el, event, reload) {
                     <tbody>${rows.map((r) => `
                         <tr>
                             <td><div class="fw-semibold">${esc(r.last_name)}, ${esc(r.first_name)}</div>
-                                <div class="small text-muted">${esc(r.email)}${r.prc_license_number ? ` &middot; PRC ${esc(r.prc_license_number)}` : ''}</div></td>
+                                <div class="small text-muted">${esc(r.email)}</div></td>
                             <td class="text-center text-nowrap">${r.sessions_attended} / ${r.sessions_total}
                                 <div class="small text-muted">${r.attendance_pct}%</div></td>
                             <td class="small">${certificateStatus(r)}</td>

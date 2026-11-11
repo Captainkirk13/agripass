@@ -22,7 +22,7 @@ const HELP_TOPICS = { registrations: 'registrations', certificates: 'certificate
 const NEXT_STATUS = {
     Draft: { status: 'Active', label: 'Publish event', icon: 'send', help: 'Opens registration for this event.' },
     Active: { status: 'Completed', label: 'Mark as completed', icon: 'flag', help: 'Closes registration and scanning. If this is the active event, it will no longer be active.' },
-    Completed: { status: 'Archived', label: 'Archive event', icon: 'archive', help: 'Archived events are permanently locked for PRC/CPD audit purposes and cannot be edited.' },
+    Completed: { status: 'Archived', label: 'Archive event', icon: 'archive', help: 'Archived events are permanently locked and cannot be edited.' },
 };
 
 const FIELD_TYPES = { text: 'Text', number: 'Number', select: 'Dropdown', checkbox: 'Checkbox' };
@@ -137,7 +137,6 @@ function renderOverview(el, event) {
                             ${row('Dates', formatDateRange(event.start_date, event.end_date))}
                             ${row('Scheduled attendance', formatDuration(totalSessionHours(event.sessions)))}
                             ${row('Certificate attendance requirement', `${esc(event.certificate_min_attendance_pct)}% of sessions attended`)}
-                            ${row('PRC accreditation no.', esc(event.prc_accreditation_no))}
                             ${row('Certificate signatories', [event.cert_signatory_name, event.cert_signatory_2_name].filter(Boolean).map((n, i) => `${esc(n)}<div class="small text-muted">${esc(i ? event.cert_signatory_2_title : event.cert_signatory_title)}</div>`).join(''))}
                             ${row('Created', formatDateTime(event.created_at))}
                         </dl>
@@ -240,7 +239,7 @@ function renderFields(el, event, editable, reload) {
             <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                 <div>
                     <h2 class="h6 mb-0 fw-semibold">Custom registration fields</h2>
-                    <div class="small text-muted">Asked in addition to the standard name, email, PRC license, contact and chapter fields.</div>
+                    <div class="small text-muted">Asked in addition to the standard name, email, contact and chapter fields.</div>
                 </div>
                 ${editable ? '<button class="btn btn-primary btn-sm" id="add-field"><i class="bi bi-plus-lg me-1"></i>Add field</button>' : ''}
             </div>
@@ -330,14 +329,14 @@ async function renderRegistrations(el, event) {
     el.innerHTML = `
         <div class="card">
             <div class="card-header bg-white py-3 d-flex flex-wrap gap-2 align-items-center">
-                <input type="search" class="form-control form-control-sm" style="max-width:280px" placeholder="Search name, email, PRC no., chapter…" id="reg-search">
+                <input type="search" class="form-control form-control-sm" style="max-width:280px" placeholder="Search name, email, chapter…" id="reg-search">
                 <span class="ms-auto small text-muted" id="reg-count"></span>
             </div>
             <div id="reg-table"></div>
         </div>`;
 
     const draw = () => {
-        const rows = registrations.filter((r) => [r.first_name, r.last_name, r.email, r.prc_license_number, r.chapter_region, r.designation, r.nickname, r.contact_number, r.flight_arrival, r.flight_departure, r.food_allergies]
+        const rows = registrations.filter((r) => [r.first_name, r.last_name, r.email, r.chapter_region, r.designation, r.nickname, r.contact_number, r.flight_arrival, r.flight_departure, r.food_allergies]
                 .join(' ').toLowerCase().includes(search));
         const count = el.querySelector('#reg-count');
         if (!count || !el.isConnected) return;
@@ -354,7 +353,7 @@ async function renderRegistrations(el, event) {
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead><tr>
-                        <th>Attendee</th><th>Chapter</th><th>PRC license</th>
+                        <th>Attendee</th><th>Chapter</th>
                         ${event.custom_fields.map((f) => `<th>${esc(f.field_label)}</th>`).join('')}
                         <th class="text-center">Sessions</th><th>Registered</th>
                     </tr></thead>
@@ -366,7 +365,6 @@ async function renderRegistrations(el, event) {
                                     ? `<a class="text-decoration-none" href="#/members/${r.member_id}">${esc(r.last_name)}, ${esc(r.first_name)}</a>`
                                     : `${esc(r.last_name)}, ${esc(r.first_name)}`}</div><div class="small text-muted">${esc(r.email)}</div></td>
                                 <td class="small">${esc(r.chapter_region) || '<span class="text-muted">—</span>'}</td>
-                                <td class="small">${esc(r.prc_license_number) || '<span class="text-muted">—</span>'}</td>
                                 ${event.custom_fields.map((f) => {
                                     const value = responses[f.field_id];
                                     const shown = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;

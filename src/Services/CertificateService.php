@@ -20,7 +20,7 @@ final class CertificateService
 
         $rows = Database::all(
             "SELECT r.registration_id, r.qr_token,
-                    m.first_name, m.last_name, m.email, m.prc_license_number, m.chapter_region,
+                    m.first_name, m.last_name, m.email, m.chapter_region,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = r.event_id) AS sessions_attended,
                     c.certificate_id, c.certificate_no, c.verification_code, c.issued_at, c.emailed_at, c.revoked_at, c.revoked_reason
@@ -73,12 +73,12 @@ final class CertificateService
         $number = sprintf('PAA-%s-%03d-%05d', substr($event['start_date'], 0, 4), $event['event_id'], $row['registration_id']);
         try {
             $id = Database::insert(
-                'INSERT INTO certificates (registration_id, certificate_no, verification_code, attendee_name, prc_license_number,
+                'INSERT INTO certificates (registration_id, certificate_no, verification_code, attendee_name,
                                            sessions_attended, sessions_total, issued_by)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                 VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [
                     $row['registration_id'], $number, strtoupper(bin2hex(random_bytes(8))),
-                    trim("{$row['first_name']} {$row['last_name']}"), $row['prc_license_number'],
+                    trim("{$row['first_name']} {$row['last_name']}"),
                     $row['sessions_attended'], $row['sessions_total'], $issuedBy,
                 ],
             );

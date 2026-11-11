@@ -44,7 +44,6 @@ final class CertificateController
             ],
             'settings' => [
                 'certificate_min_attendance_pct' => (int) $event['certificate_min_attendance_pct'],
-                'prc_accreditation_no' => $event['prc_accreditation_no'],
                 'signatory_name' => $event['cert_signatory_name'],
                 'signatory_title' => $event['cert_signatory_title'],
                 'signatory_2_name' => $event['cert_signatory_2_name'],
@@ -102,7 +101,6 @@ final class CertificateController
         $sessions = (int) Database::one('SELECT COUNT(*) AS total FROM event_sessions WHERE event_id = ?', [$event['event_id']])['total'];
         $sample = [
             'attendee_name' => 'Juan Dela Cruz',
-            'prc_license_number' => '0012345',
             'certificate_no' => sprintf('PAA-%s-%03d-00000', substr($event['start_date'], 0, 4), $event['event_id']),
             'verification_code' => 'SAMPLE0000000000',
             'sessions_attended' => $sessions,
@@ -182,7 +180,6 @@ final class CertificateController
             'status' => $certificate['revoked_at'] === null ? 'valid' : 'revoked',
             'certificate_no' => $certificate['certificate_no'],
             'attendee_name' => $certificate['attendee_name'],
-            'prc_license_number' => $certificate['prc_license_number'],
             'sessions_attended' => (int) $certificate['sessions_attended'],
             'sessions_total' => (int) $certificate['sessions_total'],
             'issued_at' => $certificate['issued_at'],
@@ -191,7 +188,6 @@ final class CertificateController
             'event_venue' => $event['venue'],
             'event_start_date' => $event['start_date'],
             'event_end_date' => $event['end_date'],
-            'prc_accreditation_no' => $event['prc_accreditation_no'],
         ]]);
     }
 

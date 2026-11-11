@@ -9,7 +9,6 @@ CREATE TABLE certificates (
     certificate_no VARCHAR(40) NOT NULL,
     verification_code CHAR(16) NOT NULL,
     attendee_name VARCHAR(120) NOT NULL,
-    prc_license_number VARCHAR(50) NULL,
     sessions_attended SMALLINT UNSIGNED NOT NULL,
     sessions_total SMALLINT UNSIGNED NOT NULL,
     issued_by INT NULL,

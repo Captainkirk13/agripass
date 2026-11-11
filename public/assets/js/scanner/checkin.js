@@ -243,7 +243,7 @@ export class CheckInEngine extends EventTarget {
         const q = query.trim().toLowerCase();
         if (q.length < 2) return [];
         return this.roster.registrations
-            .filter((r) => `${r.name} ${r.prc_license_number || ''} ${r.chapter_region || ''}`.toLowerCase().includes(q))
+            .filter((r) => `${r.name} ${r.chapter_region || ''}`.toLowerCase().includes(q))
             .slice(0, 25)
             .map((r) => ({ ...r, checked_in_at: this.attendance.get(key(r.registration_id, this.sessionId)) || null }));
     }

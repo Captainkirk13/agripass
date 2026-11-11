@@ -5,7 +5,7 @@ import {
 import { CHAPTERS } from '../lib/chapters.js';
 import { passActions, passCard } from './pass-card.js';
 
-const PROFILE_FIELDS = ['first_name', 'last_name', 'email', 'contact_number', 'designation', 'nickname', 'birthdate', 'flight_arrival', 'flight_departure', 'food_allergies', 'prc_license_number', 'chapter_region'];
+const PROFILE_FIELDS = ['first_name', 'last_name', 'email', 'contact_number', 'designation', 'nickname', 'birthdate', 'flight_arrival', 'flight_departure', 'food_allergies', 'chapter_region'];
 
 const app = document.getElementById('app');
 
@@ -45,7 +45,6 @@ function hero(event) {
             <div class="row g-2">
                 ${fact('Scheduled attendance', formatDuration(scheduledHours(event.sessions)))}
                 ${fact('Sessions', event.sessions.length || '—')}
-                ${fact('PRC accreditation', esc(event.prc_accreditation_no) || '—')}
             </div>
         </section>`;
 }
@@ -108,7 +107,6 @@ function renderForm(event) {
                     <div class="col-md-6"><label class="form-label" for="email">Email address <span class="text-danger">*</span></label><input class="form-control" type="email" id="email" name="email" maxlength="100" autocomplete="email" required></div>
                     <div class="col-md-6"><label class="form-label" for="contact_number">Contact number</label><input class="form-control" type="tel" id="contact_number" name="contact_number" maxlength="20" autocomplete="tel"></div>
                     <div class="col-md-6"><label class="form-label" for="designation">Designation / position</label><input class="form-control" id="designation" name="designation" maxlength="100"></div>
-                    <div class="col-md-6"><label class="form-label" for="prc_license_number">PRC license number</label><input class="form-control" id="prc_license_number" name="prc_license_number" maxlength="50"></div>
                     <div class="col-md-6"><label class="form-label" for="chapter_region">Chapter / region</label><select class="form-select" id="chapter_region" name="chapter_region"><option value="">Select your chapter…</option>${CHAPTERS.map((c) => `<option>${esc(c)}</option>`).join('')}</select></div>
                     <div class="col-md-6"><label class="form-label" for="flight_arrival">Flight arrival</label><input class="form-control" id="flight_arrival" name="flight_arrival" maxlength="100" placeholder="Flight number, date and time"></div>
                     <div class="col-md-6"><label class="form-label" for="flight_departure">Flight departure</label><input class="form-control" id="flight_departure" name="flight_departure" maxlength="100" placeholder="Flight number, date and time"></div>
@@ -117,7 +115,7 @@ function renderForm(event) {
                 ${event.custom_fields.length ? `<div class="section-title"><i class="bi bi-ui-checks"></i>Event questions</div><div class="row g-3 mb-4">${event.custom_fields.map(customFieldInput).join('')}</div>` : ''}
                 <div class="form-check mb-4">
                     <input class="form-check-input" type="checkbox" id="privacy_consent" name="privacy_consent" required>
-                    <label class="form-check-label small" for="privacy_consent">I consent to the Philippine Association of Agriculturists, Inc. collecting and processing my personal information for event registration, attendance reporting to the PRC, in accordance with the Data Privacy Act of 2012 (RA 10173). <span class="text-danger">*</span></label>
+                    <label class="form-check-label small" for="privacy_consent">I consent to the Philippine Association of Agriculturists, Inc. collecting and processing my personal information for event registration, in accordance with the Data Privacy Act of 2012 (RA 10173). <span class="text-danger">*</span></label>
                 </div>
                 <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-qr-code me-2"></i>Register &amp; get my QR pass</button>
             </form>

@@ -28,7 +28,7 @@ export async function renderMembers() {
         <div class="card">
             <div class="card-header bg-white py-3 d-flex flex-wrap gap-2 align-items-center">
                 <input type="search" class="form-control form-control-sm" style="max-width:300px" id="member-search"
-                       placeholder="Search name, email, PRC license…" value="${esc(filters.q)}">
+                       placeholder="Search name or email…" value="${esc(filters.q)}">
                 <select class="form-select form-select-sm" style="max-width:180px" id="status-filter" aria-label="Membership status">
                     <option value="">All statuses</option>
                     ${Object.entries(MEMBERSHIP_LABELS).map(([v, l]) => `<option value="${v}" ${filters.status === v ? 'selected' : ''}>${l}</option>`).join('')}
@@ -70,13 +70,12 @@ async function load() {
         table.innerHTML = `
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead><tr><th style="min-width:220px">Member</th><th>PRC license</th><th>Chapter</th><th>Status</th>
+                    <thead><tr><th style="min-width:220px">Member</th><th>Chapter</th><th>Status</th>
                         <th>Activity</th><th>Portal sign-in</th></tr></thead>
                     <tbody>${data.members.map((m) => `
                         <tr class="clickable-row" data-member="${m.member_id}">
                             <td><a class="fw-semibold text-decoration-none" href="#/members/${m.member_id}">${esc(m.last_name)}, ${esc(m.first_name)}</a>
                                 <div class="small text-muted">${esc(m.email)}</div></td>
-                            <td class="small text-nowrap">${esc(m.prc_license_number) || '<span class="text-muted">—</span>'}</td>
                             <td class="small">${esc(m.chapter_region) || '<span class="text-muted">—</span>'}</td>
                             <td class="text-nowrap">${membershipBadge(m.membership_status)}</td>
                             <td class="small text-nowrap">${plural(m.registrations, 'event')}
@@ -126,7 +125,6 @@ export async function renderMemberDetail(memberId) {
                     <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Profile</h2></div>
                     <div class="card-body"><dl class="row mb-0 small">
                         ${row('Mobile number', esc(member.contact_number))}
-                        ${row('PRC license', esc(member.prc_license_number))}
                         ${row('Designation / position', esc(member.designation))}
                         ${row('Nickname', esc(member.nickname))}
                         ${row('Birthdate', formatDate(member.birthdate))}
@@ -217,13 +215,12 @@ function editMember(member, onSaved) {
                         <option value="">Not set</option>
                         ${chapters.map((c) => `<option ${c === member.chapter_region ? 'selected' : ''}>${esc(c)}</option>`).join('')}
                     </select></div>
-                ${input('prc_license_number', 'PRC license number', 'maxlength="50"')}
                 <div class="col-md-6"><label class="form-label" for="m-membership_status">PAA membership</label>
                     <select class="form-select" id="m-membership_status" name="membership_status">
                         ${Object.entries(MEMBERSHIP_LABELS).map(([v, l]) => `<option value="${v}" ${member.membership_status === v ? 'selected' : ''}>${l}</option>`).join('')}
                     </select></div>
             </div>
-            <p class="small text-muted mt-3 mb-0">Certificates already issued keep the name and PRC license printed on them.</p>`,
+            <p class="small text-muted mt-3 mb-0">Certificates already issued keep the name printed on them.</p>`,
         onSubmit: async (form) => {
             await api(`/members/${member.member_id}`, { method: 'PUT', body: formData(form) });
             toast('Member updated.');

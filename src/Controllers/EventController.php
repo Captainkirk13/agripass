@@ -35,7 +35,6 @@ final class EventController
         'geofence_latitude' => 'optional',
         'geofence_longitude' => 'optional',
         'geofence_radius_m' => 'optional',
-        'prc_accreditation_no' => 'optional',
         'cert_signatory_name' => 'optional',
         'cert_signatory_title' => 'optional',
         'cert_signatory_2_name' => 'optional',
@@ -87,8 +86,8 @@ final class EventController
         $user = Auth::require(Auth::ADMINS);
         $data = self::validated($request);
         $id = Database::insert(
-            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct, geofence_enabled, geofence_latitude, geofence_longitude, geofence_radius_m, prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct, geofence_enabled, geofence_latitude, geofence_longitude, geofence_radius_m, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [...self::columns($data), $user['user_id']],
         );
         AuditLog::record($user['user_id'], 'event.create', 'event', $id);
@@ -103,7 +102,7 @@ final class EventController
         $data = self::validated($request);
         Database::run(
             'UPDATE events SET title = ?, event_type = ?, description = ?, venue = ?, start_date = ?, end_date = ?,
-                               certificate_min_attendance_pct = ?, geofence_enabled = ?, geofence_latitude = ?, geofence_longitude = ?, geofence_radius_m = ?, prc_accreditation_no = ?,
+                               certificate_min_attendance_pct = ?, geofence_enabled = ?, geofence_latitude = ?, geofence_longitude = ?, geofence_radius_m = ?,
                                cert_signatory_name = ?, cert_signatory_title = ?, cert_signatory_2_name = ?, cert_signatory_2_title = ?
              WHERE event_id = ?',
             [...self::columns($data), $event['event_id']],
@@ -295,7 +294,6 @@ final class EventController
             $data['geofence_latitude'],
             $data['geofence_longitude'],
             $data['geofence_radius_m'],
-            $data['prc_accreditation_no'],
             $data['cert_signatory_name'],
             $data['cert_signatory_title'],
             $data['cert_signatory_2_name'],

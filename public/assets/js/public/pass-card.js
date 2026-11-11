@@ -26,7 +26,6 @@ export function passCard(pass, token) {
                 <div class="pass-name mb-2">${esc(pass.first_name)} ${esc(pass.last_name)}</div>
                 <div class="row g-2 mb-3 small">
                     ${pass.chapter_region ? `<div class="col-6"><div class="label">Chapter</div>${esc(pass.chapter_region)}</div>` : ''}
-                    ${pass.prc_license_number ? `<div class="col-6"><div class="label">PRC license</div>${esc(pass.prc_license_number)}</div>` : ''}
                 </div>
                 ${pass.sessions.length ? `
                 <div class="mt-3">

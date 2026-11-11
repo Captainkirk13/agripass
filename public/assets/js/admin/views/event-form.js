@@ -98,7 +98,7 @@ export async function renderEventForm(eventId = null) {
 
                 <div class="col-lg-4">
                     <div class="card mb-4">
-                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate &amp; PRC details</h2></div>
+                        <div class="card-header bg-white py-3"><h2 class="h6 mb-0 fw-semibold">Certificate details</h2></div>
                         <div class="card-body row g-3">
                             <div class="col-12">
                                 <label class="form-label" for="certificate_min_attendance_pct">Minimum attendance for certificate</label>
@@ -106,10 +106,6 @@ export async function renderEventForm(eventId = null) {
                                     <input class="form-control" type="number" min="0" max="100" id="certificate_min_attendance_pct" name="certificate_min_attendance_pct" value="${v('certificate_min_attendance_pct', '80')}">
                                     <span class="input-group-text">% of sessions</span>
                                 </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="prc_accreditation_no">PRC accreditation no.</label>
-                                <input class="form-control" id="prc_accreditation_no" name="prc_accreditation_no" value="${v('prc_accreditation_no')}" maxlength="100">
                             </div>
                         </div>
                     </div>

@@ -49,7 +49,7 @@ final class CheckInService
 
         $registration = Database::one(
             'SELECT r.registration_id, r.event_id, r.qr_token,
-                    m.member_id, m.first_name, m.last_name, m.chapter_region, m.prc_license_number
+                    m.member_id, m.first_name, m.last_name, m.chapter_region
              FROM registrations r JOIN members m ON m.member_id = r.member_id
              WHERE r.registration_id = ? AND r.qr_token = ?',
             [$parsed['registration_id'], $qrToken],
@@ -62,7 +62,6 @@ final class CheckInService
             'registration_id' => (int) $registration['registration_id'],
             'name' => $registration['first_name'] . ' ' . $registration['last_name'],
             'chapter_region' => $registration['chapter_region'],
-            'prc_license_number' => $registration['prc_license_number'],
         ];
 
         $blocked = self::outsideVenue($event, $latitude, $longitude);

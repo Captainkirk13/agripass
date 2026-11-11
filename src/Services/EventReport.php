@@ -7,7 +7,7 @@ namespace AgriPass\Services;
 use AgriPass\Core\Database;
 
 /**
- * Post-event analytics: KPI scorecard, session turnout and arrival times, chapter and license breakdowns,
+ * Post-event analytics: KPI scorecard, session turnout and arrival times, chapter breakdowns,
  * and custom-field tallies. Shared by the Reports tab, the PDF summary and the CSV exports.
  */
 final class EventReport
@@ -19,7 +19,7 @@ final class EventReport
         $eventId = (int) $event['event_id'];
         $registrants = Database::all(
             "SELECT r.registration_id, r.custom_responses,
-                    m.chapter_region, m.prc_license_number, m.membership_status,
+                    m.chapter_region, m.membership_status,
                     (SELECT COUNT(*) FROM attendances a JOIN event_sessions s ON s.session_id = a.session_id
                      WHERE a.registration_id = r.registration_id AND s.event_id = r.event_id) AS sessions_attended
              FROM registrations r JOIN members m ON m.member_id = r.member_id
@@ -40,7 +40,6 @@ final class EventReport
             'sessions' => self::sessions($registrants, $sessions),
             'arrivals' => self::arrivals($eventId, $sessions),
             'chapters' => self::groupBy($registrants, static fn ($r) => $r['chapter_region'] ?: self::NOT_SPECIFIED),
-            'licensed' => self::groupBy($registrants, static fn ($r) => trim((string) $r['prc_license_number']) !== '' ? 'PRC licensed' : 'No PRC license on file'),
             'membership' => self::groupBy($registrants, static fn ($r) => match ($r['membership_status']) {
                 'Active' => 'Active member', 'Inactive' => 'Inactive member', default => 'Non-member',
             }),

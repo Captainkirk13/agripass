@@ -80,9 +80,9 @@ final class PortalController
 
         try {
             Database::run(
-                'UPDATE members SET first_name = ?, last_name = ?, contact_number = ?, designation = ?, nickname = ?, birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?, prc_license_number = ?
+                'UPDATE members SET first_name = ?, last_name = ?, contact_number = ?, designation = ?, nickname = ?, birthdate = ?, flight_arrival = ?, flight_departure = ?, food_allergies = ?, chapter_region = ?
                  WHERE member_id = ?',
-                [$data['first_name'], $data['last_name'], $data['contact_number'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'], $data['prc_license_number'], $member['member_id']],
+                [$data['first_name'], $data['last_name'], $data['contact_number'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $data['chapter_region'], $member['member_id']],
             );
         } catch (PDOException $e) {
             if ($e->getCode() !== '23000') {

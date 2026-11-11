@@ -29,7 +29,6 @@ final class RegistrationController
             'first_name' => 'required',
             'last_name' => 'required',
             'email' => 'required',
-            'prc_license_number' => 'optional',
             'contact_number' => 'optional',
             'chapter_region' => 'optional',
             'designation' => 'optional',
@@ -124,7 +123,7 @@ final class RegistrationController
         $event = EventContext::find($request->param('id'));
         Response::json(['registrations' => Database::all(
             'SELECT r.registration_id, r.custom_responses, r.registration_date,
-                    m.member_id, m.first_name, m.last_name, m.email, m.chapter_region, m.prc_license_number, m.contact_number,
+                    m.member_id, m.first_name, m.last_name, m.email, m.chapter_region, m.contact_number,
                     m.designation, m.nickname, m.birthdate, m.flight_arrival, m.flight_departure, m.food_allergies,
                     (SELECT COUNT(*) FROM attendances a WHERE a.registration_id = r.registration_id) AS sessions_attended
              FROM registrations r JOIN members m ON m.member_id = r.member_id
@@ -138,17 +137,17 @@ final class RegistrationController
         $existing = Database::one('SELECT member_id FROM members WHERE email = ?', [$data['email']]);
         if ($existing === null) {
             return Database::insert(
-                'INSERT INTO members (prc_license_number, first_name, last_name, email, contact_number, chapter_region, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [$data['prc_license_number'], $data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies']],
+                'INSERT INTO members (first_name, last_name, email, contact_number, chapter_region, designation, nickname, birthdate, flight_arrival, flight_departure, food_allergies)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$data['first_name'], $data['last_name'], $data['email'], $data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies']],
             );
         }
         Database::run(
-            'UPDATE members SET prc_license_number = COALESCE(prc_license_number, ?), contact_number = COALESCE(contact_number, ?),
+            'UPDATE members SET contact_number = COALESCE(contact_number, ?),
                                 chapter_region = COALESCE(chapter_region, ?), designation = COALESCE(designation, ?), nickname = COALESCE(nickname, ?),
                                 birthdate = COALESCE(birthdate, ?), flight_arrival = COALESCE(flight_arrival, ?), flight_departure = COALESCE(flight_departure, ?),
                                 food_allergies = COALESCE(food_allergies, ?) WHERE member_id = ?',
-            [$data['prc_license_number'], $data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $existing['member_id']],
+            [$data['contact_number'], $data['chapter_region'], $data['designation'], $data['nickname'], $data['birthdate'], $data['flight_arrival'], $data['flight_departure'], $data['food_allergies'], $existing['member_id']],
         );
         return (int) $existing['member_id'];
     }

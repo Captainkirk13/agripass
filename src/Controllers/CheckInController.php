@@ -74,7 +74,7 @@ final class CheckInController
             ),
             'registrations' => Database::all(
                 "SELECT r.registration_id, r.qr_token,
-                        CONCAT(m.first_name, ' ', m.last_name) AS name, m.chapter_region, m.prc_license_number
+                        CONCAT(m.first_name, ' ', m.last_name) AS name, m.chapter_region
                  FROM registrations r JOIN members m ON m.member_id = r.member_id
                  WHERE r.event_id = ?",
                 [$event['event_id']],

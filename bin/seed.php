@@ -40,10 +40,10 @@ if (Database::one("SELECT 1 FROM events WHERE title = 'PAA National Convention 2
 
 $eventId = Database::insert(
     "INSERT INTO events (title, event_type, description, venue, start_date, end_date,
-                         prc_accreditation_no, status, is_active, created_by)
+                         status, is_active, created_by)
      VALUES ('PAA National Convention 2026', 'Convention', 'Annual national convention of agriculturists.',
              'Central Luzon State University, Science City of Muñoz, Nueva Ecija', '2026-11-18', '2026-11-19',
-             'PRC-AIPO-2026-0001', 'Active', 1, ?)",
+             'Active', 1, ?)",
     [$adminId],
 );
 Database::run('UPDATE events SET is_active = 0 WHERE event_id <> ?', [$eventId]);
@@ -81,10 +81,10 @@ function seedCompletedSeminar(int $adminId): void
 
     $eventId = Database::insert(
         "INSERT INTO events (title, event_type, description, venue, start_date, end_date, certificate_min_attendance_pct,
-                             prc_accreditation_no, cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, status, created_by)
+                             cert_signatory_name, cert_signatory_title, cert_signatory_2_name, cert_signatory_2_title, status, created_by)
          VALUES (?, 'Seminar', 'Two-day seminar on climate-smart farming and agri-technology.',
                  'University of the Philippines Los Baños, Laguna', '2026-09-15', '2026-09-16', 75,
-                 'PRC-AIPO-2026-0412', 'Dr. Ramon C. Bautista', 'National President, Philippine Association of Agriculturists, Inc.',
+                 'Dr. Ramon C. Bautista', 'National President, Philippine Association of Agriculturists, Inc.',
                  'Dr. Elena P. Santos', 'Certificate Committee Chair', 'Completed', ?)",
         [$title, $adminId],
     );
@@ -102,18 +102,18 @@ function seedCompletedSeminar(int $adminId): void
         ), "{$date} {$start}"];
     }
 
-    // [first, last, email, PRC license, chapter, sessions attended]
+    // [first, last, email, chapter, sessions attended]
     $attendees = [
-        ['Carmela', 'Villanueva', 'carmela.villanueva@example.com', '0071234', 'Region IV-A - CALABARZON', 4],
-        ['Rafael', 'Mendoza', 'rafael.mendoza@example.com', '0068842', 'Region III - Central Luzon', 3],
-        ['Teresa', 'Aquino', 'teresa.aquino@example.com', '0059310', 'NCR - National Capital Region', 2],
-        ['Benjamin', 'Ocampo', 'benjamin.ocampo@example.com', '0080127', 'Region I - Ilocos Region', 4],
+        ['Carmela', 'Villanueva', 'carmela.villanueva@example.com', 'Region IV-A - CALABARZON', 4],
+        ['Rafael', 'Mendoza', 'rafael.mendoza@example.com', 'Region III - Central Luzon', 3],
+        ['Teresa', 'Aquino', 'teresa.aquino@example.com', 'NCR - National Capital Region', 2],
+        ['Benjamin', 'Ocampo', 'benjamin.ocampo@example.com', 'Region I - Ilocos Region', 4],
     ];
-    foreach ($attendees as [$first, $last, $email, $prc, $chapter, $attended]) {
+    foreach ($attendees as [$first, $last, $email, $chapter, $attended]) {
         $member = Database::one('SELECT member_id FROM members WHERE email = ?', [$email]);
         $memberId = $member ? (int) $member['member_id'] : Database::insert(
-            'INSERT INTO members (prc_license_number, first_name, last_name, email, chapter_region) VALUES (?, ?, ?, ?, ?)',
-            [$prc, $first, $last, $email, $chapter],
+            'INSERT INTO members (first_name, last_name, email, chapter_region) VALUES (?, ?, ?, ?)',
+            [$first, $last, $email, $chapter],
         );
         $registrationId = Database::insert(
             'INSERT INTO registrations (event_id, member_id, qr_token) VALUES (?, ?, UUID())',
