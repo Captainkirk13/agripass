@@ -191,6 +191,27 @@ final class CertificateController
         ]]);
     }
 
+    /** Remove an uploaded signature image for one signatory. */
+    public static function removeSignature(Request $request): void
+    {
+        $user = Auth::require(Auth::ADMINS);
+        $event = EventContext::find($request->param('id'));
+        EventContext::assertEditable($event);
+        $which = (string) $request->validate(['signatory' => 'required'])['signatory'];
+        if (!in_array($which, ['1', '2'], true)) {
+            throw new HttpException(422, 'Validation failed.', ['signatory' => 'Choose signatory 1 or 2.']);
+        }
+
+        $pathColumn = $which === '2' ? 'cert_signature_2_path' : 'cert_signature_path';
+        $previous = CertificatePdf::signatureFile($event[$pathColumn] ?? null);
+        Database::run("UPDATE events SET {$pathColumn} = NULL WHERE event_id = ?", [$event['event_id']]);
+        if ($previous !== null) {
+            @unlink($previous);
+        }
+        AuditLog::record($user['user_id'], 'event.signature_removed', 'event', (int) $event['event_id'], ['signatory' => (int) $which]);
+        Response::json(['ok' => true]);
+    }
+
     /** Multipart upload of the signatory's signature image; re-encoded as PNG to strip metadata and anything else embedded. */
     public static function uploadSignature(Request $request): void
     {

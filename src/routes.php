@@ -73,6 +73,7 @@ return static function (Router $r): void {
     $r->post('/api/events/{id}/certificates/issue', [CertificateController::class, 'issue']);
     $r->get('/api/events/{id}/certificates/preview', [CertificateController::class, 'preview']);
     $r->post('/api/events/{id}/signature', [CertificateController::class, 'uploadSignature']);
+    $r->delete('/api/events/{id}/signature', [CertificateController::class, 'removeSignature']);
     $r->get('/api/certificates/{id}/pdf', [CertificateController::class, 'show']);
     $r->post('/api/certificates/{id}/resend', [CertificateController::class, 'resend']);
     $r->post('/api/certificates/{id}/revoke', [CertificateController::class, 'revoke']);

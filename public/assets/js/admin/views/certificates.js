@@ -42,6 +42,10 @@ export async function renderCertificates(el, event, reload) {
                             ? '<i class="bi bi-check-circle-fill text-success me-1"></i>Both signature images uploaded.'
                             : '<i class="bi bi-dash-circle text-muted me-1"></i>One or both signature images are missing; blank signing lines will appear.'}</div>
                         ${editable ? `
+                        <div class="row g-3">
+                            ${signatureControl(1, settings.signatory_name, settings.has_signature)}
+                            ${signatureControl(2, settings.signatory_2_name, settings.has_signature_2)}
+                        </div>
                         <form id="signature-form">
                             <label class="form-label small mb-1" for="signatory">Signatory</label>
                             <select class="form-select form-select-sm mb-2" id="signatory" name="signatory"><option value="1">${esc(settings.signatory_name || 'Signatory 1')}</option><option value="2">${esc(settings.signatory_2_name || 'Signatory 2')}</option></select>
@@ -125,6 +129,25 @@ export async function renderCertificates(el, event, reload) {
             }
         });
     });
+
+    el.querySelectorAll('[data-remove-signature]').forEach((btn) => btn.addEventListener('click', async () => {
+        const which = btn.dataset.removeSignature;
+        const name = which === '2' ? settings.signatory_2_name : settings.signatory_name;
+        const ok = await confirmDialog({
+            title: 'Remove signature image',
+            message: `Remove the uploaded signature image for <strong>${esc(name || `Signatory ${which}`)}</strong>?`,
+            confirmLabel: 'Remove image',
+            confirmClass: 'btn-danger',
+        });
+        if (!ok) return;
+        try {
+            await api(`/events/${event.event_id}/signature`, { method: 'DELETE', body: { signatory: which } });
+            toast('Signature image removed.');
+            reload();
+        } catch (err) {
+            toastError(err);
+        }
+    }));
 
     document.getElementById('issue-all')?.addEventListener('click', async () => {
         const ok = await confirmDialog({
@@ -245,6 +268,16 @@ function actions(r, blocker) {
         return `<button class="btn btn-sm btn-outline-primary" data-action="issue" data-reg="${r.registration_id}"><i class="bi bi-award me-1"></i>Issue</button>`;
     }
     return '';
+}
+
+function signatureControl(which, name, hasSignature) {
+    return `<div class="col-sm-6">
+        <div class="border rounded p-3 h-100">
+            <div class="small mb-2"><strong>${esc(name || `Signatory ${which}`)}</strong><br>
+                ${hasSignature ? '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Signature image uploaded</span>' : '<span class="text-muted">No signature image</span>'}</div>
+            ${hasSignature ? `<button type="button" class="btn btn-sm btn-outline-danger" data-remove-signature="${which}"><i class="bi bi-trash me-1"></i>Remove image</button>` : ''}
+        </div>
+    </div>`;
 }
 
 function stat(label, value, icon) {
